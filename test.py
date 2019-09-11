@@ -36,7 +36,7 @@ def test(args):
 	scale = True
 
 	# Load model.
-	model_path = os.path.join(workspace, "models", "%ddb" % int(tr_snr), "senn.h5")
+	model_path = os.path.join(workspace, "models", "%ddb" % int(tr_snr), "FullyCNN.h5")
 	model = load_model(model_path)
 
 
