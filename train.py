@@ -100,7 +100,7 @@ def train(args):
     # Train.
     t1 = time.time()
     model.fit_generator(tr_gen.generate(xs=[tr_x], ys=[tr_y]), validation_data=te_gen.generate(xs=[te_x], ys=[te_y]),
-                        validation_steps=100, steps_per_epoch=20, epochs=100)
+                        validation_steps=100, steps_per_epoch=200, epochs=100)
     print("Training complete.")
     model_name = 'FullyCNN.h5'
     model_path = os.path.join(model_dir, model_name)
