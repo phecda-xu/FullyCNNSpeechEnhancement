@@ -1,5 +1,6 @@
 #!/bin/bash
 # Train.
+WORKSPACE="workspace"
 TR_SNR=0
 TE_SNR=0
 LEARNING_RATE=1e-4
