@@ -376,7 +376,7 @@ if __name__ == '__main__':
     parser_compute_scaler.add_argument('--data_type', type=str, default='test')
     parser_compute_scaler.add_argument('--snr', type=float, default=0)
     
-    args = parser.parse_args(['create_mixture_csv'])
+    args = parser.parse_args()
     if args.mode == 'create_mixture_csv':
         create_mixture_csv(args)
     elif args.mode == 'calculate_mixture_features':

@@ -140,7 +140,7 @@ if __name__ == '__main__':
     parser_train.add_argument('--te_snr', type=float,  default=0)
     parser_train.add_argument('--lr', type=float,  default=0.0001)
 
-    args = parser.parse_args(['train'])
+    args = parser.parse_args()
     if args.mode == 'train':
         train(args)
     else:
