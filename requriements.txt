@@ -1,0 +1,8 @@
+-i https://pypi.tuna.tsinghua.edu.cn/simple/
+numpy
+h5py
+keras
+tensorflow
+scipy
+librosa
+matplotlib
