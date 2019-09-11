@@ -346,10 +346,10 @@ if __name__ == '__main__':
     parser_create_mixture_csv.add_argument('--workspace', type=str, default='workspace')
     parser_create_mixture_csv.add_argument('--speech_dir',
                                            type=str,
-                                           default='../data/datasets/test_speech')
+                                           default='../../data/enhanceData/test_speech')
     parser_create_mixture_csv.add_argument('--noise_dir',
                                            type=str,
-                                           default='../data/datasets/test_noise')
+                                           default='../../data/enhanceData/test_noise')
     parser_create_mixture_csv.add_argument('--data_type', type=str, default='test')
     parser_create_mixture_csv.add_argument('--magnification', type=int, default=1)
 
@@ -357,10 +357,10 @@ if __name__ == '__main__':
     parser_calculate_mixture_features.add_argument('--workspace', type=str, default='workspace')
     parser_calculate_mixture_features.add_argument('--speech_dir',
                                                    type=str,
-                                                   default='../data/datasets/test_speech')
+                                                   default='../../data/enhanceData/test_speech')
     parser_calculate_mixture_features.add_argument('--noise_dir',
                                                    type=str,
-                                                   default='../data/datasets/test_noise')
+                                                   default='../../data/enhanceData/test_noise')
     parser_calculate_mixture_features.add_argument('--data_type', type=str, default='test')
     parser_calculate_mixture_features.add_argument('--snr', type=float, default=0)
     
@@ -376,7 +376,7 @@ if __name__ == '__main__':
     parser_compute_scaler.add_argument('--data_type', type=str, default='test')
     parser_compute_scaler.add_argument('--snr', type=float, default=0)
     
-    args = parser.parse_args(['pack_features'])
+    args = parser.parse_args(['create_mixture_csv'])
     if args.mode == 'create_mixture_csv':
         create_mixture_csv(args)
     elif args.mode == 'calculate_mixture_features':

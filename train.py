@@ -6,6 +6,7 @@ from data_generator import DataGenerator
 from keras.models import Model
 from keras.layers import Add, Activation, Reshape, Conv2D, Input, BatchNormalization
 import tensorflow as tf
+from keras import optimizers
 import numpy as np
 
 
@@ -36,7 +37,6 @@ def train(args):
     print("%d iterations / epoch" % int(tr_x.shape[0] / batch_size))
     # Build model
     _, n_freq = tr_x.shape
-    n_hid = 256
     # encode
     T = 1
     data = Input(shape=[n_freq])
@@ -87,7 +87,8 @@ def train(args):
 
     out = Reshape([n_freq])(y5)
     model = Model(inputs=data, outputs=out)
-    model.compile(loss='mean_absolute_error', optimizer='adam')
+    adam = optimizers.Adam(lr=lr, decay=1e-6)
+    model.compile(loss='mean_absolute_error', optimizer=adam)
     model.summary()
 
     # Data generator.
