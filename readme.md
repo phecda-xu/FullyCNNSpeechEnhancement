@@ -1,8 +1,8 @@
 # 全卷积网络进行语音降噪
 
-[源项目](https://github.com/eesungkim/Speech_Enhancement_DNN_NMF)
+[参考项目](https://github.com/eesungkim/Speech_Enhancement_DNN_NMF)
 
-[论文]()
+[论文](https://arxiv.org/pdf/1609.07132.pdf)
 
 ## 预计实现内容
 
