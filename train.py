@@ -81,8 +81,8 @@ def train(args):
     y4 = BatchNormalization(axis=-1)(y4)
     y4 = Activation('relu')(y4)
 
-    y5 = Conv2D(1, (1,n_freq), strides=(10, 1), data_format='channels_first', padding='same')(y4)
-    y5 = BatchNormalization(axis=-1)(y5)
+    y5 = Conv2D(1, (1, n_freq), strides=(10, 1), data_format='channels_first', padding='same')(y4)
+    # y5 = BatchNormalization(axis=-1)(y5)
     y5 = Activation('relu')(y5)
 
     out = Reshape([n_freq])(y5)
