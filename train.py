@@ -87,7 +87,7 @@ def train(args):
 
     out = Reshape([n_freq])(y5)
     model = Model(inputs=data, outputs=out)
-    adam = optimizers.Adam(lr=lr, decay=1e-6)
+    adam = optimizers.Adam(lr=lr)
     model.compile(loss='mean_absolute_error', optimizer=adam)
     model.summary()
 
