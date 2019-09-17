@@ -9,3 +9,4 @@ workspace/models/
 workspace/enh_wavs/
 utils/__pycache__/
 data_cache/record.wav
+data_cache/test_speech/
