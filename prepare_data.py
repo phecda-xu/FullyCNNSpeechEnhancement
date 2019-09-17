@@ -346,37 +346,37 @@ if __name__ == '__main__':
     parser_create_mixture_csv.add_argument('--workspace', type=str, default='workspace')
     parser_create_mixture_csv.add_argument('--speech_dir',
                                            type=str,
-                                           default='../../data/enhanceData/test_speech')
+                                           default='../../data/enhanceData/train_speech')
     parser_create_mixture_csv.add_argument('--noise_dir',
                                            type=str,
-                                           default='../../data/enhanceData/test_noise')
-    parser_create_mixture_csv.add_argument('--data_type', type=str, default='test')
+                                           default='../../data/enhanceData/train_noise')
+    parser_create_mixture_csv.add_argument('--data_type', type=str, default='train')
     parser_create_mixture_csv.add_argument('--magnification', type=int, default=1)
 
     parser_calculate_mixture_features = subparsers.add_parser('calculate_mixture_features')
     parser_calculate_mixture_features.add_argument('--workspace', type=str, default='workspace')
     parser_calculate_mixture_features.add_argument('--speech_dir',
                                                    type=str,
-                                                   default='../../data/enhanceData/test_speech')
+                                                   default='../../data/enhanceData/train_speech')
     parser_calculate_mixture_features.add_argument('--noise_dir',
                                                    type=str,
-                                                   default='../../data/enhanceData/test_noise')
-    parser_calculate_mixture_features.add_argument('--data_type', type=str, default='test')
+                                                   default='../../data/enhanceData/train_noise')
+    parser_calculate_mixture_features.add_argument('--data_type', type=str, default='train')
     parser_calculate_mixture_features.add_argument('--snr', type=float, default=0)
     
     parser_pack_features = subparsers.add_parser('pack_features')
     parser_pack_features.add_argument('--workspace', type=str, default='workspace')
-    parser_pack_features.add_argument('--data_type', type=str, default='test')
+    parser_pack_features.add_argument('--data_type', type=str, default='train')
     parser_pack_features.add_argument('--snr', type=float, default=0)
     parser_pack_features.add_argument('--n_concat', type=int, default=7)
     parser_pack_features.add_argument('--n_hop', type=int, default=160)
     
     parser_compute_scaler = subparsers.add_parser('compute_scaler')
     parser_compute_scaler.add_argument('--workspace', type=str, default='workspace')
-    parser_compute_scaler.add_argument('--data_type', type=str, default='test')
+    parser_compute_scaler.add_argument('--data_type', type=str, default='train')
     parser_compute_scaler.add_argument('--snr', type=float, default=0)
     
-    args = parser.parse_args()
+    args = parser.parse_args(['pack_features'])
     if args.mode == 'create_mixture_csv':
         create_mixture_csv(args)
     elif args.mode == 'calculate_mixture_features':
