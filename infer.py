@@ -17,13 +17,13 @@ from data_utils.data_loader import AudioParser
 
 
 class InferenceEngine(BaseTester):
-    def __init__(self, config):
-        super(InferenceEngine, self).__init__(config)
-        self.sample_rate = int(config.get("data", 'sample_rate'))
-        self.feature_dim = int(config.get('data', 'feature_dim'))
-        self.audio_save_path = config.get('data', 'audio_save_path')
-        self.window_ms = int(config.get("data", "window_ms"))
-        self.stride_ms = int(config.get("data", "stride_ms"))
+    def __init__(self, infer_config):
+        super(InferenceEngine, self).__init__(infer_config)
+        self.sample_rate = int(infer_config.get("data", 'sample_rate'))
+        self.feature_dim = int(infer_config.get('data', 'feature_dim'))
+        self.audio_save_path = infer_config.get('data', 'audio_save_path')
+        self.window_ms = int(infer_config.get("data", "window_ms"))
+        self.stride_ms = int(infer_config.get("data", "stride_ms"))
         self.creat_graph()
         self._init_session()
         self._load_checkpoint()
@@ -40,7 +40,7 @@ class InferenceEngine(BaseTester):
                                        dtype=tf.float32,
                                        name="target")
         #
-        self.model = FullyCNNSEModel()
+        self.model = FullyCNNSEModel(is_training=False)
         self.pred = self.model(self.input_x)
 
     def denoise(self, audio_file):
