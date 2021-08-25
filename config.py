@@ -1,3 +1,12 @@
-sample_rate = 16000
-n_window = 512      # windows size for FFT
-n_overlap = 256     # overlap of window
+# coding :utf-8
+#
+#
+#
+#
+import configparser as ConfigParser
+
+
+def load_conf_info(config_file):
+    config = ConfigParser.ConfigParser()
+    config.read(config_file)
+    return config
