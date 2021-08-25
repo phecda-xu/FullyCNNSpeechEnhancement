@@ -1,8 +1,8 @@
--i https://pypi.tuna.tsinghua.edu.cn/simple/
+-i https://mirrors.aliyun.com/pypi/simple/
+llvmlite==0.31.0
 numpy
-h5py
-keras
-tensorflow
+tensorflow==1.14.0
 scipy
+tqdm
 librosa
-matplotlib
+soundfile
