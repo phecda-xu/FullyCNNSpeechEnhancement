@@ -69,7 +69,7 @@ def main(config, num_works):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Training')
     parser.add_argument('--cfg', default='', type=str, help='cfg file for train')
-    parser.add_argument('--num-works', default=16, type=int, help='multi thread for data_loader')
+    parser.add_argument('--num-works', default=4, type=int, help='multi thread for data_loader')
     args = parser.parse_args()
     train_config = load_conf_info(args.cfg)
     main(train_config, args.num_works)

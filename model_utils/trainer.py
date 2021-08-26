@@ -103,9 +103,12 @@ class FullyCNNTrainer(BaseTrainer):
         self._init_session()
         self._init_saver()
         self.param_count()
+        self.train_loss = AverageMeter()
         self.pesq_score = AverageMeter()
         self.stoi_score = AverageMeter()
         self.sdr_score = AverageMeter()
+        self.data_time = AverageMeter()
+        self.batch_time = AverageMeter()
 
     def _init_summary(self):
         tf.summary.scalar('learning_rate', self.lr)
@@ -154,22 +157,30 @@ class FullyCNNTrainer(BaseTrainer):
             total_train_aduios = 0
             total_train_loss = 0
             train_loader.shuffle()
+            start_time = time.time()
             for index, (batch_mix, batch_clean, _, _) in enumerate(train_loader):
                 train_batch_id += 1
                 total_train_aduios += train_loader.batch_size
+
+                self.data_time.update(time.time() - start_time)
                 start_time = time.time()
                 batch_loss, train_summary, global_step = self.train_step(batch_mix, batch_clean)
                 total_train_loss += batch_loss
+                self.train_loss.update(batch_loss, n=self.batch_size)
                 train_summary_writter.add_summary(train_summary, global_step)
+                end_time = time.time()
+                self.batch_time.update(end_time - start_time)
                 if train_batch_id % self.num_iter_print == 0:
-                    end_time = time.time()
-                    print("epoch: {}, batch: {}/{}, train loss: {:.4f}({:.4f}), "
-                          "time_cost: {:.3f}s".format(epoch,
-                                                      train_batch_id,
-                                                      len(train_loader),
-                                                      float(batch_loss),
-                                                      float(total_train_loss / total_train_aduios),
-                                                      end_time - start_time))
+                    print("epoch: {}, batch: {}/{}, "
+                          "TrainLoss: {train_loss.val:.4f}({train_loss.avg:.4f}), "
+                          "DataTime: {data_time.val:.3f}({data_time.avg:.3f}), "
+                          "BatchTime: {batch_time.val:.3f}({batch_time.avg:.3f})".format(epoch,
+                                                                                         train_batch_id,
+                                                                                         len(train_loader),
+                                                                                         train_loss=self.train_loss,
+                                                                                         data_time=self.data_time,
+                                                                                         batch_time=self.data_time))
+                start_time = time.time()
             if not os.path.exists(self.checkpoints_path + '/{}_{}'.format(self.net_arch, self.net_work)):
                 os.makedirs(self.checkpoints_path + '/{}_{}'.format(self.net_arch, self.net_work))
             checkpoint_path = os.path.join(self.checkpoints_path + '/{}_{}'.format(self.net_arch, self.net_work),
