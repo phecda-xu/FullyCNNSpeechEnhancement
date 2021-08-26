@@ -13,7 +13,7 @@ from model_utils.trainer import FullyCNNTrainer
 from data_utils.data_loader import DataLoader, Sampler, DataSet
 
 
-def main(config):
+def main(config, num_works):
 
     logging_path = config.get("training", "log_dir")
     epochs = int(config.get("training", 'epochs'))
@@ -58,9 +58,9 @@ def main(config):
                           use_complex=True)
 
     train_sampler = Sampler(train_dataset, batch_size=batch_size)
-    train_loader = DataLoader(train_dataset, batch_size, train_sampler)
+    train_loader = DataLoader(train_dataset, batch_size, sampler=train_sampler, num_works=num_works)
 
-    val_loader = DataLoader(val_dataset, batch_size, sampler=None)
+    val_loader = DataLoader(val_dataset, batch_size, sampler=None, num_works=num_works)
 
     SE_Trainer = FullyCNNTrainer(config)
     SE_Trainer.train(train_loader, val_loader, epochs, logger)
@@ -69,6 +69,7 @@ def main(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Training')
     parser.add_argument('--cfg', default='', type=str, help='cfg file for train')
+    parser.add_argument('--num-works', default=16, type=int, help='multi thread for data_loader')
     args = parser.parse_args()
     train_config = load_conf_info(args.cfg)
-    main(train_config)
+    main(train_config, args.num_works)

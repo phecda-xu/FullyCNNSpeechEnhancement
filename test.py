@@ -10,7 +10,7 @@ from model_utils.tester import FullyCNNTester
 from data_utils.data_loader import DataLoader, DataSet
 
 
-def main(config):
+def main(config, num_works):
     window_ms = int(config.get("data", "window_ms"))
     stride_ms = int(config.get("data", "stride_ms"))
     sample_rate = int(config.get("data", 'sample_rate'))
@@ -25,7 +25,7 @@ def main(config):
                            stride_ms=stride_ms,
                            use_complex=True)
 
-    test_loader = DataLoader(test_dataset, batch_size, sampler=None)
+    test_loader = DataLoader(test_dataset, batch_size, sampler=None, num_works=num_works)
     SE_Tester = FullyCNNTester(config)
     SE_Tester.test(test_loader)
 
@@ -33,6 +33,7 @@ def main(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Training')
     parser.add_argument('--cfg', default='', type=str, help='cfg file for test')
+    parser.add_argument('--num-works', default=16, type=int, help='multi thread for data_loader')
     args = parser.parse_args()
     test_config = load_conf_info(args.cfg)
-    main(test_config)
+    main(test_config, args.num_works)
