@@ -179,7 +179,7 @@ class FullyCNNTrainer(BaseTrainer):
                                                                                          len(train_loader),
                                                                                          train_loss=self.train_loss,
                                                                                          data_time=self.data_time,
-                                                                                         batch_time=self.data_time))
+                                                                                         batch_time=self.batch_time))
                 start_time = time.time()
             if not os.path.exists(self.checkpoints_path + '/{}_{}'.format(self.net_arch, self.net_work)):
                 os.makedirs(self.checkpoints_path + '/{}_{}'.format(self.net_arch, self.net_work))
