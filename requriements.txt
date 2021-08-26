@@ -6,3 +6,5 @@ scipy
 tqdm
 librosa
 soundfile
+pypesq
+pystoi
