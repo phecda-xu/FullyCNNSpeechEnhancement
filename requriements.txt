@@ -1,7 +1,7 @@
 -i https://mirrors.aliyun.com/pypi/simple/
 llvmlite==0.31.0
 numpy
-tensorflow==1.14.0
+tensorflow-gpu==1.14.0
 scipy
 tqdm
 librosa
