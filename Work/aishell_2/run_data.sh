@@ -7,7 +7,7 @@ export PYTHONPATH=.:$PYTHONPATH
 # download data, generate manifests
 python Work/datasets/aishell_2_prepare.py \
 --manifest_prefix='Work/aishell_2/data/manifest.aishell_2' \
---target_dir='~/data/ASR/aishell_2' \
+--target_dir='~/data/ASR/AISHELL-2' \
 
 if [ $? -ne 0 ]; then
     echo "Prepare Aishell_2 failed. Terminated."
