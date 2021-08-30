@@ -10,25 +10,59 @@ import os
 import json
 import codecs
 import string
+import resampy
 import argparse
-import soundfile
+import soundfile as sf
 from tqdm import tqdm
 from data_utils.utils import unpack
+from multiprocessing import Process, Queue, Pool, Manager
 
 DATA_HOME = '~/datadisk/phecda/ASR'
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
-    "--target_dir",
+    "--target-dir",
     default=DATA_HOME + "/AISHELL-2",
     type=str,
     help="Directory to save the dataset. (default: %(default)s)")
 parser.add_argument(
-    "--manifest_prefix",
+    "--manifest-prefix",
     default="Work/aishell_2/data/manifest",
     type=str,
     help="Filepath prefix for output manifests. (default: %(default)s)")
+parser.add_argument(
+    "--sample-rate",
+    default=16000,
+    type=int,
+    help="target audio sample rate")
 args = parser.parse_args()
+
+
+def load_and_resample(audio_path, n):
+    path_dic = {"8000": "8K", "32000": "32K"}
+    audio_data, samplerate = sf.read(audio_path)
+    if len(audio_data) < 100:
+        return None
+    if samplerate != args.sample_rate:
+        audio_data = resampy.resample(
+            audio_data, samplerate, args.sample_rate, filter='kaiser_best')
+        samplerate = args.sample_rate
+        audio_path = audio_path.replace("ASR", "{}ASR".format(path_dic[str(args.sample_rate)]))
+        try:
+            if not os.path.exists(os.path.dirname(audio_path)):
+                os.makedirs(os.path.dirname(audio_path))
+        except:
+            print('')
+        sf.write(audio_path, audio_data, samplerate)
+    duration = float(len(audio_data) / samplerate)
+    json_str = json.dumps(
+        {
+            'audio_filepath': audio_path,
+            'duration': duration,
+        },
+        ensure_ascii=False)
+    # print("pid : {} ; process audio :{}".format(os.getpid(), n))
+    return json_str
 
 
 def create_manifest(data_dir, manifest_path_prefix):
@@ -65,25 +99,32 @@ def create_manifest(data_dir, manifest_path_prefix):
     test_json_lines = []
     dev_json_lines = []
     audio_dir = os.path.join(data_dir, 'iOS/data/wav')
+    pool = Pool()
+    results = []
+    n = 0
     for subfolder, _, filelist in tqdm(sorted(os.walk(audio_dir))):
+        spk_id = os.path.basename(subfolder)
         for fname in filelist:
             audio_path = os.path.join(subfolder, fname)
-            spk_id = os.path.basename(subfolder)
-            # if no transcription for audio then skipped
-            audio_data, samplerate = soundfile.read(audio_path)
-            duration = float(len(audio_data) / samplerate)
-            json_lines = json.dumps(
-                    {
-                        'audio_filepath': audio_path,
-                        'duration': duration,
-                    },
-                    ensure_ascii=False)
+            try:
+                n += 1
+                res = pool.apply_async(load_and_resample, (audio_path, n))
+                results.append(res)
+            except:
+                continue
+        pool.close()
+        pool.join()
+        for res in tqdm(results):
+            get_res = res.get()
+            if get_res is None:
+                continue
+            # json_lines.append(res.get())
             if spk_id in dev_spk_list:
-                dev_json_lines.append(json_lines)
+                dev_json_lines.append(get_res)
             elif spk_id in test_spk_list:
-                test_json_lines.append(json_lines)
+                test_json_lines.append(get_res)
             else:
-                train_json_lines.append(json_lines)
+                train_json_lines.append(get_res)
     # save manifest
     manifest_path = manifest_path_prefix + '.' + 'train'
     with codecs.open(manifest_path, 'w', 'utf-8') as fout:

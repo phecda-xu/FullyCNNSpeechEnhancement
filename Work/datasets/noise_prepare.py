@@ -9,23 +9,57 @@
 import io
 import os
 import json
+import resampy
 import argparse
-import soundfile
+import soundfile as sf
 from tqdm import tqdm
+from multiprocessing import Process, Queue, Pool, Manager
 
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
-    "--target_dir",
-    default="~/_Farfiled_background_",
+    "--target-dir",
+    default="~/Noise/_Farfiled_background_",
     type=str,
     help="Directory to save the dataset. (default: %(default)s)")
 parser.add_argument(
-    "--manifest_prefix",
+    "--manifest-prefix",
     default="Work/noise/manifest.farfiled.background",
     type=str,
     help="Filepath for output manifests. (default: %(default)s)")
+parser.add_argument(
+    "--sample-rate",
+    default=16000,
+    type=int,
+    help="target audio sample rate")
 args = parser.parse_args()
+
+
+def load_and_resample(audio_path, n):
+    path_dic = {"8000": "8K", "16000": "16K", "32000": "32K"}
+    audio_data, samplerate = sf.read(audio_path)
+    if len(audio_data) < 100:
+        return None
+    if samplerate != args.sample_rate:
+        audio_data = resampy.resample(
+            audio_data, samplerate, args.sample_rate, filter='kaiser_best')
+        samplerate = args.sample_rate
+        audio_path = audio_path.replace("Noise", "{}Noise".format(path_dic[str(args.sample_rate)]))
+        try:
+            if not os.path.exists(os.path.dirname(audio_path)):
+                os.makedirs(os.path.dirname(audio_path))
+        except:
+            print('')
+        sf.write(audio_path, audio_data, samplerate)
+    duration = float(len(audio_data) / samplerate)
+    json_str = json.dumps(
+        {
+            'audio_filepath': audio_path,
+            'duration': duration,
+        },
+        ensure_ascii=False)
+    # print("pid : {} ; process audio :{}".format(os.getpid(), n))
+    return json_str
 
 
 def create_manifest(data_dir, manifest_path_prefix):
@@ -34,22 +68,27 @@ def create_manifest(data_dir, manifest_path_prefix):
     duration) of each audio file within the data set.
     """
     print("Creating manifest %s ..." % manifest_path_prefix)
-    json_lines = []
     data_types = ['train', 'dev', 'test']
     for data_type in data_types:
-        del json_lines[:]
+        json_lines = []
+        pool = Pool()
+        results = []
+        n = 0
         audio_dir = os.path.join(data_dir, data_type)
-        for subfolder, _, filelist in tqdm(sorted(os.walk(audio_dir))):
-            for filename in filelist:
+        for subfolder, _, filelist in sorted(os.walk(audio_dir)):
+            for filename in tqdm(filelist):
                 if filename.endswith('.wav'):
-                    filepath = os.path.join(data_dir, subfolder, filename)
-                    audio_data, samplerate = soundfile.read(filepath)
-                    duration = float(len(audio_data)) / samplerate
-                    json_lines.append(
-                        json.dumps({
-                            'audio_filepath': filepath,
-                            'duration': duration,
-                        }))
+                    audio_path = os.path.join(data_dir, subfolder, filename)
+                    n += 1
+                    res = pool.apply_async(load_and_resample, (audio_path, n))
+                    results.append(res)
+        pool.close()
+        pool.join()
+        for res in results:
+            get_res = res.get()
+            if get_res is None:
+                continue
+            json_lines.append(get_res)
         manifest_path = manifest_path_prefix + '.' + data_type
         if not os.path.exists(os.path.dirname(manifest_path)):
             os.makedirs(os.path.dirname(manifest_path))
