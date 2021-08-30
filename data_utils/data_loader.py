@@ -111,15 +111,15 @@ class DataSet(AudioParser):
         noise_audio = self.noise_list[index]["audio_filepath"]
         speech, _ = self.load_audio(clean_audio)
         noise, _ = self.load_audio(noise_audio)
-        print("load time: {}".format(time.time() - start_time))
+        # print("load time: {}".format(time.time() - start_time))
         end_time = time.time()
         mix_sig = self.add_noise(speech, noise)
-        print("mix time: {}".format(time.time() - end_time))
+        # print("mix time: {}".format(time.time() - end_time))
         end_time = time.time()
         speech_spec = self.parse_audio(speech)
         mix_spec = self.parse_audio(mix_sig)
-        print("parse time: {}".format(time.time() - end_time))
-        print("total time : {}".format(time.time() - start_time))
+        # print("parse time: {}".format(time.time() - end_time))
+        # print("total time : {}".format(time.time() - start_time))
         return (mix_sig, speech), (mix_spec, speech_spec)
 
     def __len__(self):
@@ -188,18 +188,19 @@ class DataLoader(object):
         return a, b
 
     def pool_process(self, index_list):
-        pool = Pool(processes=self.num_works)
         result = []
-        for index in index_list:
-            if self.num_works > 1:
+        if self.num_works > 1:
+            pool = Pool(processes=self.num_works)
+            for index in index_list:
                 res = pool.apply_async(self.one_point, (index,))
                 result.append(res)
-            else:
+            pool.close()
+            pool.join()
+            [self.q.append(i.get()) for i in result]
+        else:
+            for index in index_list:
                 res = self.one_point(index)
                 self.q.append(res)
-        pool.close()
-        pool.join()
-        [self.q.append(i.get()) for i in result]
 
     def padding_batch(self, batch_list):
         max_array = max(batch_list, key=lambda x: x.shape[1])
@@ -239,7 +240,7 @@ class DataLoader(object):
                     start_time = time.time()
                     self.pool_process(index_list)
                     end_time = time.time()
-                    print("pool_process time:{}".format(end_time - start_time))
+                    # print("pool_process time:{}".format(end_time - start_time))
                 for ind in range(int(len(self.q) / self.batch_size)):
                     results = []
                     for _ in range(self.batch_size):
@@ -247,7 +248,7 @@ class DataLoader(object):
                     start_time = time.time()
                     batch_mix, batch_clean, mix_sig, clean_sig = self.collect_fn(results)
                     end_time = time.time()
-                    print("collect_fn time:{}".format(end_time - start_time))
+                    # print("collect_fn time:{}".format(end_time - start_time))
                     yield batch_mix, batch_clean, mix_sig, clean_sig
         else:
             for index_list in self.bins:
@@ -268,105 +269,3 @@ class DataLoader(object):
 
     def shuffle(self):
         self.dataset.shuffle()
-
-
-# class MultiprocessDataIter(object):
-#     def __init__(self):
-#         pass
-#
-#
-# class DataLoader(object):
-#     def __init__(self, dataset, batch_size, sampler=None, num_works=2):
-#         super(DataLoader, self).__init__()
-#         self.dataset = dataset
-#         self.batch_size = batch_size
-#         self.sampler = sampler
-#         self.num_works = num_works
-#         self.q = Queue(maxsize=100)
-#         if self.sampler is None:
-#             self.bins = []
-#             for i in range(0, len(self.dataset), self.batch_size):
-#                 if i + self.batch_size < len(self.dataset):
-#                     index_list = list(range(i, i + self.batch_size))
-#                 else:
-#                     index_list = list(range(i, len(self.dataset)))
-#                 self.bins.append(index_list)
-#
-#     def one_point(self, x):
-#         a, b = self.dataset[x]
-#         return a, b
-#
-#     def producer(self, index_list):
-#         pool = Pool(processes=self.num_works)
-#         for index in index_list:
-#             if self.num_works > 1:
-#                 pool.apply_async(self.one_point, (index,), callback=lambda x: self.q.put(x))
-#             else:
-#                 res = self.one_point(index)
-#                 self.q.put(res)
-#         pool.close()
-#         pool.join()
-#
-#     def padding_batch(self, batch_list):
-#         max_array = max(batch_list, key=lambda x: x.shape[1])
-#         batch_data = []
-#         for arr in batch_list:
-#             batch_data_sample = np.zeros_like(max_array)
-#             hang, lie = arr.shape
-#             batch_data_sample[:hang, :lie] = arr
-#             batch_data.append(batch_data_sample)
-#         batch_data = np.array(batch_data)
-#         batch_data = np.expand_dims(batch_data, axis=1)
-#         batch_data = np.transpose(batch_data, (0, 3, 2, 1))
-#         return batch_data
-#
-#     def collect_fn(self, batch_data):
-#         input_mix_sig = []
-#         input_mix_spec = []
-#         target_clean_sig = []
-#         target_clean_spec = []
-#         for i in range(self.batch_size):
-#             input_mix_sig.append(batch_data[i][0][0])
-#             input_mix_spec.append(batch_data[i][1][0])
-#             target_clean_sig.append(batch_data[i][0][1])
-#             target_clean_spec.append(batch_data[i][1][1])
-#         input_mix_array = self.padding_batch(input_mix_spec)
-#         target_clean_array = self.padding_batch(target_clean_spec)
-#         assert input_mix_array.shape == target_clean_array.shape
-#         return input_mix_array, target_clean_array, input_mix_sig, target_clean_sig
-#
-#     def __iter__(self):
-#         if self.sampler is not None:
-#             if self.sampler.batch_size < self.batch_size:
-#                 self.batch_size = self.sampler.batch_size
-#                 print("Warrning: sampler.batch_size < self.batch_size. Self.batch_size changed!")
-#             for index_list in self.sampler:
-#                 self.producer(index_list)
-#                 results = []
-#                 for ind in range(self.batch_size):
-#                     results.append(self.q.get())
-#                     batch_mix, batch_clean, mix_sig, clean_sig = self.collect_fn(results)
-#                     yield batch_mix, batch_clean, mix_sig, clean_sig
-#         else:
-#             for index_list in self.bins:
-#                 if len(self.q) < self.batch_size:
-#                     self.pool_process(index_list)
-#                 for ind in range(int(len(self.q) / self.batch_size)):
-#                     results = []
-#                     for _ in range(self.batch_size):
-#                         results.append(self.q.pop(0))
-#                     batch_mix, batch_clean, mix_sig, clean_sig = self.collect_fn(results)
-#                     yield batch_mix, batch_clean, mix_sig, clean_sig
-#
-#     def __len__(self):
-#         if self.sampler is not None:
-#             return len(self.sampler)
-#         else:
-#             return len(self.bins)
-#
-#     def shuffle(self):
-#         self.dataset.shuffle()
-
-
-
-
