@@ -17,6 +17,10 @@ from model_utils.utils import PESQ, STOI, SDR
 class BaseTrainer(object):
     def __init__(self, train_config):
         self.base_checkpoint = train_config.get('training', "base_checkpoint_file")
+        self.checkpoints_path = train_config.get('training', 'checkpoints_path')
+        self.continue_train = train_config.getboolean('training', "continue_train")
+        self.net_arch = train_config.get('model', 'net_arch')
+        self.net_work = train_config.get('model', 'net_work')
         self.lr = float(train_config.get('training', "lr"))
         self.global_step = tf.train.get_or_create_global_step()
 
@@ -37,6 +41,11 @@ class BaseTrainer(object):
         if self.base_checkpoint != "":
             self.saver.restore(self.sess, self.base_checkpoint)
             print('recover from checkpoint_file: {}'.format(self.base_checkpoint))
+        elif self.continue_train:
+            self.continue_from = tf.train.latest_checkpoint(self.checkpoints_path
+                                                       + '/{}_{}'.format(self.net_arch, self.net_work))
+            self.saver.restore(self.sess, self.continue_from)
+            print('recover from checkpoint_file: {}'.format(self.continue_from))
         else:
             self.sess.run(tf.global_variables_initializer())
             print('variables_initial finished!')
@@ -94,9 +103,6 @@ class FullyCNNTrainer(BaseTrainer):
         self.feature_dim = int(train_config.get('data', 'feature_dim'))
         self.batch_size = int(train_config.get('training', 'batch_size'))
         self.num_iter_print = int(train_config.get('training', 'num_iter_print'))
-        self.checkpoints_path = train_config.get('training', 'checkpoints_path')
-        self.net_arch = train_config.get('model', 'net_arch')
-        self.net_work = train_config.get('model', 'net_work')
         self._init_optimizer()
         self.creat_graph()
         self._init_summary()
@@ -152,7 +158,11 @@ class FullyCNNTrainer(BaseTrainer):
         global_step = 0
         train_summary_writter = self.save_summary(self.checkpoints_path,
                                                   "train_summary_{}_{}".format(self.net_arch, self.net_work))
-        for epoch in range(epochs):
+        if self.continue_train:
+            start_epoch = int(self.continue_from.split("_")[-2]) + 1
+        else:
+            start_epoch = 0
+        for epoch in range(start_epoch, epochs):
             train_batch_id = 0
             total_train_aduios = 0
             total_train_loss = 0
