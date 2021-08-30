@@ -122,7 +122,8 @@ class FullyCNNTrainer(BaseTrainer):
         self.merged_summaries = tf.summary.merge_all()
 
     def loss_fun(self, x, y):
-        loss_value = tf.losses.absolute_difference(x, y)
+        # loss_value = tf.losses.absolute_difference(x, y)
+        loss_value = tf.losses.mean_squared_error(x, y) * 10
         loss_value = tf.reduce_sum(loss_value)
         return loss_value
 
