@@ -15,14 +15,16 @@ def main(config, num_works):
     stride_ms = int(config.get("data", "stride_ms"))
     sample_rate = int(config.get("data", 'sample_rate'))
     test_manifest = config.get("data", "test_manifest_path")
-    test_noise_manifest = config.get("data", "test_manifest_path")
+    test_noise_manifest = config.get("data", "test_noise_manifest")
     batch_size = int(config.get("testing", "batch_size"))
+    snr = float(config.get("data", "snr"))
 
     test_dataset = DataSet(manifest_filepath=test_manifest,
                            noise_manifest=test_noise_manifest,
                            sample_rate=sample_rate,
                            window_ms=window_ms,
                            stride_ms=stride_ms,
+                           snr=snr,
                            use_complex=True)
 
     test_loader = DataLoader(test_dataset, batch_size, sampler=None, num_works=num_works)

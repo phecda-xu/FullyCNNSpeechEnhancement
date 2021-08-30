@@ -73,9 +73,16 @@ class SDR(object):
         """
         assert len(y.shape) == 1
         assert len(y) == len(y_pred)
-        y_en = np.power(y, 2).sum()
-        y_pred_en = np.power(y_pred-y, 2).sum()
-        sdr_score = 10 * np.log10(y_en / (y_pred_en + np.finfo(np.float32).eps))
+        # y_en = np.power(y, 2).sum()
+        # y_pred_en = np.power(y_pred-y, 2).sum()
+        # sdr_score = 10 * np.log10(y_en / (y_pred_en + np.finfo(np.float32).eps))
+
+        y_en = np.sum(y ** 2, axis=-1, keepdims=True)
+        optimal_scaling = np.sum(y * y_pred, axis=-1, keepdims=True) / y_en
+        y = optimal_scaling * y
+        noise = y_pred-y
+        ratio = np.sum(y ** 2, axis=-1) / np.sum(noise ** 2, axis=-1)
+        sdr_score = 10 * np.log10(ratio)
         return sdr_score
 
     def __call__(self, x, y):

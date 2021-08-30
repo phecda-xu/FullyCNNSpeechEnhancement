@@ -16,7 +16,7 @@ from model_utils.utils import PESQ, STOI, SDR
 
 class BaseTester(object):
     def __init__(self, test_config):
-        self.checkpoint_file = test_config.get('model', "checkpoint_filepath")
+        self.checkpoint_file = test_config.get('testing', "checkpoint_filepath")
         self.net_arch = test_config.get('model', 'net_arch')
         self.net_work = test_config.get('model', 'net_work')
 
@@ -60,6 +60,8 @@ class FullyCNNTester(BaseTester):
         self.pesq_score = AverageMeter()
         self.stoi_score = AverageMeter()
         self.sdr_score = AverageMeter()
+        if not os.path.exists(self.audio_save_path):
+            os.makedirs(self.audio_save_path)
 
     def creat_graph(self):
         #
@@ -115,7 +117,7 @@ class FullyCNNTester(BaseTester):
                 self.stoi_score.update(st_score)
                 self.sdr_score.update(sd_score)
 
-                clean_audio_path = valid_loader.dataset.item_list[audio_bins[i]][0]
+                clean_audio_path = valid_loader.dataset.item_list[audio_bins[i]]["audio_filepath"]
                 new_save_clean_path = os.path.join(self.audio_save_path,
                                                    os.path.basename(clean_audio_path))
                 mix_audio_path = os.path.join(self.audio_save_path,
