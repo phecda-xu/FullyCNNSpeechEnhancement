@@ -55,7 +55,7 @@ def load_and_resample(audio_path, n):
             if not os.path.exists(os.path.dirname(audio_path)):
                 os.makedirs(os.path.dirname(audio_path))
         except:
-            print('')
+            print('Skip dir error...')
         sf.write(audio_path, audio_data, samplerate)
     duration = float(len(audio_data) / samplerate)
     json_str = json.dumps(
