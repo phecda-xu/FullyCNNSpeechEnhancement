@@ -140,8 +140,10 @@ class FullyCNNTrainer(BaseTrainer):
         self.pred = self.model(self.input_x)
         self.loss_value = self.loss_fun(self.input_x, self.pred)
         # batch_norm
-        with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-            self.train_op = slim.learning.create_train_op(self.loss_value, self.optimizer)
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        self.train_op = slim.learning.create_train_op(total_loss=self.loss_value,
+                                                      optimizer=self.optimizer,
+                                                      update_ops=update_ops)
 
     def train_step(self, input_x, target_y):
         feed_dict = {
