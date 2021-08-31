@@ -21,8 +21,11 @@ class BaseTrainer(object):
         self.continue_train = train_config.getboolean('training', "continue_train")
         self.net_arch = train_config.get('model', 'net_arch')
         self.net_work = train_config.get('model', 'net_work')
-        self.lr = float(train_config.get('training', "lr"))
+        self.init_lr = float(train_config.get('training', "lr"))
+        self.lr = self.init_lr
         self.global_step = tf.train.get_or_create_global_step()
+        self.learning_rate_input = tf.placeholder(
+            tf.float32, [], name='learning_rate_input')
 
     def _init_session(self):
         """
@@ -51,7 +54,17 @@ class BaseTrainer(object):
             print('variables_initial finished!')
 
     def _init_optimizer(self):
-        self.optimizer = tf.train.AdamOptimizer(self.lr)
+        self.optimizer = tf.train.AdamOptimizer(self.learning_rate_input)
+
+    def noam_scheme(self, global_step, warmup_steps=4000.):
+        '''Noam scheme learning rate decay
+        init_lr: initial learning rate. scalar.
+        global_step: scalar.
+        warmup_steps: scalar. During warmup_steps, learning rate increases
+            until it reaches init_lr.
+        '''
+        step = global_step + 1
+        return self.init_lr * warmup_steps ** 0.5 * np.minimum(step * warmup_steps ** -1.5, step ** -0.5)
 
     def param_count(self):
         total_params = tf.trainable_variables()
@@ -117,7 +130,7 @@ class FullyCNNTrainer(BaseTrainer):
         self.batch_time = AverageMeter()
 
     def _init_summary(self):
-        tf.summary.scalar('learning_rate', self.lr)
+        tf.summary.scalar('learning_rate', self.learning_rate_input)
         tf.summary.scalar('loss_value', self.loss_value)
         self.merged_summaries = tf.summary.merge_all()
 
@@ -155,7 +168,8 @@ class FullyCNNTrainer(BaseTrainer):
     def train_step(self, input_x, target_y):
         feed_dict = {
             self.input_x: input_x,
-            self.target_y: target_y
+            self.target_y: target_y,
+            self.learning_rate_input: self.lr,
         }
         _, batch_loss, train_summary, global_step = self.sess.run([self.train_op,
                                                                    self.loss_value,
@@ -185,6 +199,7 @@ class FullyCNNTrainer(BaseTrainer):
                 self.data_time.update(time.time() - start_time)
                 start_time = time.time()
                 batch_loss, train_summary, global_step = self.train_step(batch_mix, batch_clean)
+                self.lr = self.noam_scheme(global_step=global_step, warmup_steps=1000)
                 total_train_loss += batch_loss
                 self.train_loss.update(batch_loss, n=1)
                 train_summary_writter.add_summary(train_summary, global_step)
