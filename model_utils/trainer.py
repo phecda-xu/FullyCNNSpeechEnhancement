@@ -227,7 +227,8 @@ class FullyCNNTrainer(BaseTrainer):
                                                                      epoch,
                                                                      global_step-1))
             self.save_param(checkpoint_path)
-            self.save_graph_txt(checkpoint_path)
+            if epoch == 0:
+                self.save_graph_txt(checkpoint_path)
             if (epoch + 1) % 5 == 0:
                 self.valid(valid_loader, epoch, logger)
 
