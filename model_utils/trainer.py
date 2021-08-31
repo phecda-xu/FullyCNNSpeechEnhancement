@@ -42,11 +42,14 @@ class BaseTrainer(object):
     def _init_saver(self, max_to_keep=10):
         self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=max_to_keep)
         if self.base_checkpoint != "":
-            self.saver.restore(self.sess, self.base_checkpoint)
-            print('recover from checkpoint_file: {}'.format(self.base_checkpoint))
+            self.continue_from = self.base_checkpoint
         elif self.continue_train:
             self.continue_from = tf.train.latest_checkpoint(self.checkpoints_path
-                                                       + '/{}_{}'.format(self.net_arch, self.net_work))
+                                                            + '/{}_{}'.format(self.net_arch, self.net_work))
+        else:
+            self.continue_from = None
+
+        if self.continue_from is not None and os.path.exists(self.continue_from):
             self.saver.restore(self.sess, self.continue_from)
             print('recover from checkpoint_file: {}'.format(self.continue_from))
         else:
@@ -182,7 +185,7 @@ class FullyCNNTrainer(BaseTrainer):
         global_step = 0
         train_summary_writter = self.save_summary(self.checkpoints_path,
                                                   "train_summary_{}_{}".format(self.net_arch, self.net_work))
-        if self.continue_train:
+        if self.continue_from is not None:
             start_epoch = int(self.continue_from.split("_")[-2]) + 1
         else:
             start_epoch = 0
