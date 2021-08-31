@@ -121,10 +121,17 @@ class FullyCNNTrainer(BaseTrainer):
         tf.summary.scalar('loss_value', self.loss_value)
         self.merged_summaries = tf.summary.merge_all()
 
-    def loss_fun(self, x, y):
+    def l1_loss(self, target, current):
+        return tf.reduce_sum(tf.abs(target - current)) / self.batch_size
+
+    def l2_loss(self, target, current):
+        return tf.reduce_sum(tf.square(target - current)) / self.batch_size
+
+    def loss_fun(self, y, pred):
         # loss_value = tf.losses.absolute_difference(x, y)
-        loss_value = tf.losses.mean_squared_error(x, y) * 10
-        loss_value = tf.reduce_sum(loss_value)
+        # loss_value = tf.losses.mean_squared_error(x, y) * 10
+        # loss_value = tf.reduce_sum(loss_value)
+        loss_value = self.l2_loss(y, pred)
         return loss_value
 
     def creat_graph(self):
@@ -179,7 +186,7 @@ class FullyCNNTrainer(BaseTrainer):
                 start_time = time.time()
                 batch_loss, train_summary, global_step = self.train_step(batch_mix, batch_clean)
                 total_train_loss += batch_loss
-                self.train_loss.update(batch_loss, n=self.batch_size)
+                self.train_loss.update(batch_loss, n=1)
                 train_summary_writter.add_summary(train_summary, global_step)
                 end_time = time.time()
                 self.batch_time.update(end_time - start_time)
@@ -225,7 +232,6 @@ class FullyCNNTrainer(BaseTrainer):
             batch_phase = valid_loader.dataset.extractor.divide_phase(batch_mix)
             pred_mag = self.valid_step(batch_mag)
             for i in range(self.batch_size):
-
                 clean = clean_sig[i]
                 sig_length = len(clean)
                 mag = pred_mag[i].squeeze()
