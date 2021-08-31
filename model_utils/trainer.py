@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import slim as slim
 from tqdm import tqdm
-from model_utils.model import FullyCNNSEModel
+from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2
 from model_utils.utils import AudioReBuild, AverageMeter
 from model_utils.utils import PESQ, STOI, SDR
 
@@ -159,7 +159,10 @@ class FullyCNNTrainer(BaseTrainer):
                                        dtype=tf.float32,
                                        name="target")
         #
-        self.model = FullyCNNSEModel(is_training=True)
+        if self.net_arch is "FullyCNNV2":
+            self.model = FullyCNNSEModelV2(is_training=True)
+        else:
+            self.model = FullyCNNSEModel(is_training=True)
         self.pred = self.model(self.input_x)
         self.loss_value = self.loss_fun(self.input_x, self.pred)
         # batch_norm

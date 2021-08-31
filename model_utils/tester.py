@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 import soundfile as sf
-from model_utils.model import FullyCNNSEModel
+from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2
 from model_utils.utils import AudioReBuild, AverageMeter
 from model_utils.utils import PESQ, STOI, SDR
 
@@ -72,7 +72,10 @@ class FullyCNNTester(BaseTester):
                                        dtype=tf.float32,
                                        name="target")
         #
-        self.model = FullyCNNSEModel(is_training=False)
+        if self.net_arch is "FullyCNNV2":
+            self.model = FullyCNNSEModelV2(is_training=False)
+        else:
+            self.model = FullyCNNSEModel(is_training=False)
         self.pred = self.model(self.input_x)
 
     def test_step(self, input_x):
