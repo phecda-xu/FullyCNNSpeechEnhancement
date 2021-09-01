@@ -33,7 +33,7 @@ class BaseTester(object):
         self.sess.as_default()
 
     def _load_checkpoint(self):
-        self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver(tf.global_variables())
         self.saver.restore(self.sess, self.checkpoint_file)
         print('recover from checkpoint_file: {}'.format(self.checkpoint_file))
 

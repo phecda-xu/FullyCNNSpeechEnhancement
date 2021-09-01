@@ -6,6 +6,7 @@
 import os
 import time
 import numpy as np
+import soundfile as sf
 import tensorflow as tf
 from tensorflow.contrib import slim as slim
 from tqdm import tqdm
@@ -119,6 +120,7 @@ class FullyCNNTrainer(BaseTrainer):
         self.feature_dim = int(train_config.get('data', 'feature_dim'))
         self.batch_size = int(train_config.get('training', 'batch_size'))
         self.num_iter_print = int(train_config.get('training', 'num_iter_print'))
+        self.audio_save_path = train_config.get('data', 'audio_save_path')
         self._init_optimizer()
         self.creat_graph()
         self._init_summary()
@@ -131,6 +133,8 @@ class FullyCNNTrainer(BaseTrainer):
         self.sdr_score = AverageMeter()
         self.data_time = AverageMeter()
         self.batch_time = AverageMeter()
+        if not os.path.exists(self.audio_save_path):
+            os.makedirs(self.audio_save_path)
 
     def _init_summary(self):
         tf.summary.scalar('learning_rate', self.learning_rate_input)
@@ -251,12 +255,14 @@ class FullyCNNTrainer(BaseTrainer):
         stride_ms = valid_loader.dataset.stride_s * 1000
         pbar = tqdm(enumerate(valid_loader), total=len(valid_loader))
         for index, (batch_mix, batch_clean, mix_sig, clean_sig) in pbar:
+            audio_bins = valid_loader.bins[index]
             pbar.set_description("Epoch %s Validating %s"%(epoch, index))
             batch_mag = valid_loader.dataset.extractor.power_spectrum(batch_mix)
             batch_phase = valid_loader.dataset.extractor.divide_phase(batch_mix)
             pred_mag = self.valid_step(batch_mag)
             for i in range(self.batch_size):
                 clean = clean_sig[i]
+                mix = mix_sig[i]
                 sig_length = len(clean)
                 mag = pred_mag[i].squeeze()
                 phase = batch_phase[i].squeeze()
@@ -273,6 +279,17 @@ class FullyCNNTrainer(BaseTrainer):
                 self.pesq_score.update(p_score)
                 self.stoi_score.update(st_score)
                 self.sdr_score.update(sd_score)
+
+                clean_audio_path = valid_loader.dataset.item_list[audio_bins[i]]["audio_filepath"]
+                new_save_clean_path = os.path.join(self.audio_save_path, epoch,
+                                                   os.path.basename(clean_audio_path))
+                mix_audio_path = os.path.join(self.audio_save_path, epoch,
+                                              os.path.basename(clean_audio_path).replace('.wav', '_mix.wav'))
+                denoise_audio_path = os.path.join(self.audio_save_path, epoch,
+                                                  os.path.basename(clean_audio_path).replace('.wav', '_de.wav'))
+                sf.write(new_save_clean_path, clean, samplerate=self.sample_rate)
+                sf.write(mix_audio_path, mix, samplerate=self.sample_rate)
+                sf.write(denoise_audio_path, denoise, samplerate=self.sample_rate)
             pbar.set_postfix(PESQ=self.pesq_score.avg, STOI=self.stoi_score.avg, SDR=self.sdr_score.avg)
         print("Epoch: {}, Average p_score: {:.4f}; "
               "Average st_score: {:.4f}; "
