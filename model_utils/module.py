@@ -18,9 +18,9 @@ def conv_bn_relu(inputs, out_channels, kernel_size, stride, is_training, padding
                             is_training=is_training,
                             decay=0.96,
                             updates_collections=None,
-                            activation_fn=tf.nn.relu):
+                            activation_fn=activate):
             conv = slim.conv2d(inputs, out_channels, kernel_size, stride, padding,
-                               activation_fn=activate, scope=scope)
+                               activation_fn=None, scope=scope)
             if use_norm:
                 conv = slim.batch_norm(conv, scope=scope + '/batch_norm')
             if skip_input is not None:

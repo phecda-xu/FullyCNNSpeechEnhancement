@@ -57,8 +57,6 @@ class BaseTrainer(object):
             self.sess.run(tf.global_variables_initializer())
             print('variables_initial finished!')
 
-    def _init_optimizer(self):
-        self.optimizer = tf.train.AdamOptimizer(self.learning_rate_input)
 
     def noam_scheme(self, global_step, warmup_steps=4000.):
         '''Noam scheme learning rate decay
@@ -121,10 +119,9 @@ class FullyCNNTrainer(BaseTrainer):
         self.batch_size = int(train_config.get('training', 'batch_size'))
         self.num_iter_print = int(train_config.get('training', 'num_iter_print'))
         self.audio_save_path = train_config.get('data', 'audio_save_path')
-        self._init_optimizer()
+        self._init_session()
         self.creat_graph()
         self._init_summary()
-        self._init_session()
         self._init_saver()
         self.param_count()
         self.train_loss = AverageMeter()
@@ -171,9 +168,10 @@ class FullyCNNTrainer(BaseTrainer):
         self.loss_value = self.loss_fun(self.input_x, self.pred)
         # batch_norm
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        self.train_op = slim.learning.create_train_op(total_loss=self.loss_value,
-                                                      optimizer=self.optimizer,
-                                                      update_ops=update_ops)
+        with tf.control_dependencies(update_ops):
+            self.optimizer = tf.train.AdamOptimizer(self.learning_rate_input)
+            self.train_op = slim.learning.create_train_op(total_loss=self.loss_value,
+                                                          optimizer=self.optimizer)
 
     def train_step(self, input_x, target_y):
         feed_dict = {
@@ -181,10 +179,10 @@ class FullyCNNTrainer(BaseTrainer):
             self.target_y: target_y,
             self.learning_rate_input: self.lr,
         }
-        _, batch_loss, train_summary, global_step = self.sess.run([self.train_op,
-                                                                   self.loss_value,
+        batch_loss, train_summary, global_step, _ = self.sess.run([self.loss_value,
                                                                    self.merged_summaries,
-                                                                   self.global_step],
+                                                                   self.global_step,
+                                                                   self.train_op],
                                                                   feed_dict=feed_dict)
         return batch_loss, train_summary, global_step
 

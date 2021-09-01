@@ -40,8 +40,8 @@ class FullyCNNSEModelV2(object):
         self.is_training = is_training
 
     def encode(self, x):
-        self.encode_1 = conv_bn_relu(x, 10, kernel_size=(8, 1), stride=(1, 1), is_training=self.is_training, padding="Valid", scope="encode_1")
-        self.encode_2 = conv_bn_relu(self.encode_1, 12, kernel_size=(1, 7), stride=(1, 1), is_training=self.is_training, scope="encode_2")
+        self.encode_1 = conv_bn_relu(x, 10, kernel_size=(1, 1), stride=(1, 1), is_training=self.is_training, padding="Valid", scope="encode_1")
+        self.encode_2 = conv_bn_relu(self.encode_1, 12, kernel_size=(8, 7), stride=(1, 1), is_training=self.is_training, scope="encode_2")
         self.encode_3 = conv_bn_relu(self.encode_2, 14, kernel_size=(1, 5), stride=(1, 1), is_training=self.is_training, scope="encode_3")
         self.encode_4 = conv_bn_relu(self.encode_3, 15, kernel_size=(1, 5), stride=(1, 1), is_training=self.is_training, scope="encode_4")
         self.encode_5 = conv_bn_relu(self.encode_4, 19, kernel_size=(1, 5), stride=(1, 1), is_training=self.is_training, scope="encode_5")
@@ -56,9 +56,9 @@ class FullyCNNSEModelV2(object):
         x = conv_bn_relu(x, 19, kernel_size=(1, 5), stride=(1, 1), is_training=self.is_training, scope="decode_3", skip_input=self.encode_5)
         x = conv_bn_relu(x, 15, kernel_size=(1, 5), stride=(1, 1), is_training=self.is_training, scope="decode_4", skip_input=self.encode_4)
         x = conv_bn_relu(x, 14, kernel_size=(1, 5), stride=(1, 1), is_training=self.is_training, scope="decode_5", skip_input=self.encode_3)
-        x = conv_bn_relu(x, 12, kernel_size=(1, 7), stride=(1, 1), is_training=self.is_training, scope="decode_6", skip_input=self.encode_2)
+        x = conv_bn_relu(x, 12, kernel_size=(8, 7), stride=(1, 1), is_training=self.is_training, scope="decode_6", skip_input=self.encode_2)
         x = conv_bn_relu(x, 10, kernel_size=(1, 11), stride=(1, 1), is_training=self.is_training, scope="decode_7", skip_input=self.encode_1)
-        x = conv_bn_relu(x, 1, kernel_size=(1, 1), stride=(1, 1), is_training=self.is_training, scope="decode_8", padding="Valid", activate=None, use_norm=False)
+        x = conv_bn_relu(x, 1, kernel_size=(1, 15), stride=(1, 1), is_training=self.is_training, scope="decode_8", activate=None, use_norm=False)
         return x
 
     def __call__(self, x):
