@@ -163,7 +163,7 @@ class FullyCNNTrainer(BaseTrainer):
                                        dtype=tf.float32,
                                        name="target")
         #
-        if self.net_work is "FullyCNNV2":
+        if self.net_work == "FullyCNNV2":
             self.model = FullyCNNSEModelV2(is_training=True)
         else:
             self.model = FullyCNNSEModel(is_training=True)
