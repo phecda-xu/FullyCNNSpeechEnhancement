@@ -72,7 +72,7 @@ class FullyCNNTester(BaseTester):
                                        dtype=tf.float32,
                                        name="target")
         #
-        if self.net_arch is "FullyCNNV2":
+        if self.net_work is "FullyCNNV2":
             self.model = FullyCNNSEModelV2(is_training=False)
         else:
             self.model = FullyCNNSEModel(is_training=False)
