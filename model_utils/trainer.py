@@ -279,11 +279,14 @@ class FullyCNNTrainer(BaseTrainer):
                 self.sdr_score.update(sd_score)
 
                 clean_audio_path = valid_loader.dataset.item_list[audio_bins[i]]["audio_filepath"]
-                new_save_clean_path = os.path.join(self.audio_save_path, str(epoch),
+                epoch_save_path = os.path.join(self.audio_save_path, str(epoch))
+                if not os.path.exists(epoch_save_path):
+                    os.makedirs(epoch_save_path)
+                new_save_clean_path = os.path.join(epoch_save_path,
                                                    os.path.basename(clean_audio_path))
-                mix_audio_path = os.path.join(self.audio_save_path, str(epoch),
+                mix_audio_path = os.path.join(epoch_save_path,
                                               os.path.basename(clean_audio_path).replace('.wav', '_mix.wav'))
-                denoise_audio_path = os.path.join(self.audio_save_path, str(epoch),
+                denoise_audio_path = os.path.join(epoch_save_path,
                                                   os.path.basename(clean_audio_path).replace('.wav', '_de.wav'))
                 sf.write(new_save_clean_path, clean, samplerate=self.sample_rate)
                 sf.write(mix_audio_path, mix, samplerate=self.sample_rate)
