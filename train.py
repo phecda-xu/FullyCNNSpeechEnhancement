@@ -28,7 +28,7 @@ def main(config, num_works):
     train_clean_manifest = config.get("data", "train_manifest_path")
     val_clean_manifest = config.get("data", "val_manifest_path")
     train_noise_manifest = config.get("data", "train_noise_manifest")
-    val_noise_manifest = config.get("data", "val_manifest_path")
+    val_noise_manifest = config.get("data", "val_noise_manifest")
     snr = float(config.get("data", "snr"))
     # logging INFO
     if not os.path.exists(logging_path):
