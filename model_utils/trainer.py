@@ -10,7 +10,7 @@ import soundfile as sf
 import tensorflow as tf
 from tensorflow.contrib import slim as slim
 from tqdm import tqdm
-from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2
+from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2, FullyCNNSEModelV3
 from model_utils.utils import AudioReBuild, AverageMeter
 from model_utils.utils import PESQ, STOI, SDR
 
@@ -162,6 +162,8 @@ class FullyCNNTrainer(BaseTrainer):
         #
         if self.net_work == "FullyCNNV2":
             self.model = FullyCNNSEModelV2(is_training=True)
+        elif self.net_work == "FullyCNNV3":
+            self.model = FullyCNNSEModelV3(is_training=True)
         else:
             self.model = FullyCNNSEModel(is_training=True)
         self.pred = self.model(self.input_x)
@@ -233,7 +235,7 @@ class FullyCNNTrainer(BaseTrainer):
                                                                      global_step-1))
             self.save_param(checkpoint_path)
             if epoch == 0:
-                self.save_graph_txt(checkpoint_path)
+                self.save_graph_txt(os.path.dirname(checkpoint_path))
             if (epoch + 1) % 5 == 0:
                 self.valid(valid_loader, epoch, logger)
 
@@ -258,7 +260,7 @@ class FullyCNNTrainer(BaseTrainer):
             batch_mag = valid_loader.dataset.extractor.power_spectrum(batch_mix)
             batch_phase = valid_loader.dataset.extractor.divide_phase(batch_mix)
             pred_mag = self.valid_step(batch_mag)
-            for i in range(self.batch_size):
+            for i in range(len(audio_bins)):
                 clean = clean_sig[i]
                 mix = mix_sig[i]
                 sig_length = len(clean)
