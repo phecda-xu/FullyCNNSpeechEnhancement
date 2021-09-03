@@ -50,7 +50,7 @@ class BaseTrainer(object):
         else:
             self.continue_from = None
 
-        if self.continue_from is not None and os.path.exists(self.continue_from):
+        if self.continue_from is not None and os.path.exists(self.continue_from + '.meta'):
             self.saver.restore(self.sess, self.continue_from)
             print('recover from checkpoint_file: {}'.format(self.continue_from))
         else:
