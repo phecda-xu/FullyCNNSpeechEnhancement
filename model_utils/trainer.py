@@ -167,7 +167,7 @@ class FullyCNNTrainer(BaseTrainer):
         else:
             self.model = FullyCNNSEModel(is_training=True)
         self.pred = self.model(self.input_x)
-        self.loss_value = self.loss_fun(self.input_x, self.pred)
+        self.loss_value = self.loss_fun(self.target_y, self.pred)
         # batch_norm
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
