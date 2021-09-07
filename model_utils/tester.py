@@ -77,6 +77,7 @@ class FullyCNNTester(BaseTester):
         elif self.net_work == "FullyCNNV3":
             self.model = FullyCNNSEModelV3(is_training=False)
         else:
+            print("net_work set default or not wright. Use FullyCNN")
             self.model = FullyCNNSEModel(is_training=False)
         self.pred = self.model(self.input_x)
 

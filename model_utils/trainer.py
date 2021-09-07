@@ -167,6 +167,7 @@ class FullyCNNTrainer(BaseTrainer):
         elif self.net_work == "FullyCNNV3":
             self.model = FullyCNNSEModelV3(is_training=True)
         else:
+            print("net_work set default or not wright. Use FullyCNN")
             self.model = FullyCNNSEModel(is_training=True)
         self.pred = self.model(self.input_x)
         self.loss_value = self.loss_fun(self.target_y, self.pred)
