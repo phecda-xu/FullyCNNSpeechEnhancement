@@ -8,11 +8,12 @@ import time
 import numpy as np
 import soundfile as sf
 import tensorflow as tf
-from tensorflow.contrib import slim as slim
+
 from tqdm import tqdm
-from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2, FullyCNNSEModelV3
-from model_utils.utils import AudioReBuild, AverageMeter
+from tensorflow.contrib import slim as slim
 from model_utils.utils import PESQ, STOI, SDR
+from model_utils.utils import AudioReBuild, AverageMeter
+from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2, FullyCNNSEModelV3
 
 
 class BaseTrainer(object):
@@ -27,6 +28,12 @@ class BaseTrainer(object):
         self.global_step = tf.train.get_or_create_global_step()
         self.learning_rate_input = tf.placeholder(
             tf.float32, [], name='learning_rate_input')
+        self.train_loss = AverageMeter()
+        self.pesq_score = AverageMeter()
+        self.stoi_score = AverageMeter()
+        self.sdr_score = AverageMeter()
+        self.data_time = AverageMeter()
+        self.batch_time = AverageMeter()
 
     def _init_session(self):
         """
@@ -119,17 +126,12 @@ class FullyCNNTrainer(BaseTrainer):
         self.batch_size = int(train_config.get('training', 'batch_size'))
         self.num_iter_print = int(train_config.get('training', 'num_iter_print'))
         self.audio_save_path = train_config.get('data', 'audio_save_path')
+        self.warmup_steps = int(train_config.get('training', 'warmup_steps'))
         self._init_session()
         self.creat_graph()
         self._init_summary()
         self._init_saver()
         self.param_count()
-        self.train_loss = AverageMeter()
-        self.pesq_score = AverageMeter()
-        self.stoi_score = AverageMeter()
-        self.sdr_score = AverageMeter()
-        self.data_time = AverageMeter()
-        self.batch_time = AverageMeter()
         if not os.path.exists(self.audio_save_path):
             os.makedirs(self.audio_save_path)
 
@@ -209,7 +211,7 @@ class FullyCNNTrainer(BaseTrainer):
                 self.data_time.update(time.time() - start_time)
                 start_time = time.time()
                 batch_loss, train_summary, global_step = self.train_step(batch_mix, batch_clean)
-                self.lr = self.noam_scheme(global_step=global_step, warmup_steps=1000)
+                self.lr = self.noam_scheme(global_step=global_step, warmup_steps=self.warmup_steps)
                 total_train_loss += batch_loss
                 self.train_loss.update(batch_loss, n=1)
                 train_summary_writter.add_summary(train_summary, global_step)
