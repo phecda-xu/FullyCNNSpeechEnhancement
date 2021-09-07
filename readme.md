@@ -59,13 +59,15 @@ Work文件夹下为shell执行脚本、数据集处理脚本用于数据处理�
 
 [main()](infer.py) -> [InferenceEngine](infer.py)
 
-- 移植（待完成）
+- freeze
 
-ckpt -> pt -> 其它
+[FreezeEngine](freeze.py)
 
 
 ## 待完成
 
-- 移植
+- 实验结果
 - 实时demo
 
+
+**注**： 数据处理机制参考pytorch的实现以及paddlepaddle的DeepSpeech2.
