@@ -98,11 +98,13 @@ class FullyCNNTester(BaseTester):
         pbar = tqdm(enumerate(valid_loader), total=len(valid_loader))
         for index, (batch_mix, batch_clean, mix_sig, clean_sig) in pbar:
             audio_bins = valid_loader.bins[index]
+            # print("audio_bins", audio_bins)
+            # print("audio_bins", valid_loader.dataset.item_list[audio_bins[0]])
             pbar.set_description("Testing %s" % (index))
             batch_mag = valid_loader.dataset.extractor.power_spectrum(batch_mix)
             batch_phase = valid_loader.dataset.extractor.divide_phase(batch_mix)
             pred_mag = self.test_step(batch_mag)
-            for i in range(self.batch_size):
+            for i in range(len(audio_bins)):
                 clean = clean_sig[i]
                 mix = mix_sig[i]
                 sig_length = len(clean)
@@ -124,6 +126,7 @@ class FullyCNNTester(BaseTester):
                 self.sdr_score.update(sd_score)
 
                 clean_audio_path = valid_loader.dataset.item_list[audio_bins[i]]["audio_filepath"]
+                # print("clean_audio_path ", clean_audio_path)
                 new_save_clean_path = os.path.join(self.audio_save_path,
                                                    os.path.basename(clean_audio_path))
                 mix_audio_path = os.path.join(self.audio_save_path,

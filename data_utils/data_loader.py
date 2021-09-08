@@ -232,34 +232,31 @@ class DataLoader(object):
 
     def __iter__(self):
         if self.sampler is not None:
-            if self.sampler.batch_size < self.batch_size:
+            if self.sampler.batch_size != self.batch_size:
                 self.batch_size = self.sampler.batch_size
-                print("Warrning: sampler.batch_size < self.batch_size. Self.batch_size changed!")
+                print("Warrning: sampler.batch_size != batch_size. batch_size changed!")
             for index_list in self.sampler:
-                if len(self.q) < self.batch_size:
-                    start_time = time.time()
-                    self.pool_process(index_list)
-                    end_time = time.time()
-                    # print("pool_process time:{}".format(end_time - start_time))
-                for ind in range(int(len(self.q) / self.batch_size)):
-                    results = []
-                    for _ in range(self.batch_size):
-                        results.append(self.q.pop(0))
-                    start_time = time.time()
-                    batch_mix, batch_clean, mix_sig, clean_sig = self.collect_fn(results)
-                    end_time = time.time()
-                    # print("collect_fn time:{}".format(end_time - start_time))
-                    yield batch_mix, batch_clean, mix_sig, clean_sig
+                # print("index_list", index_list)
+                start_time = time.time()
+                self.pool_process(index_list)
+                end_time = time.time()
+                # print("pool_process time:{}".format(end_time - start_time))
+                results = self.q
+                start_time = time.time()
+                batch_mix, batch_clean, mix_sig, clean_sig = self.collect_fn(results)
+                end_time = time.time()
+                # print("collect_fn time:{}".format(end_time - start_time))
+                self.q = []
+                yield batch_mix, batch_clean, mix_sig, clean_sig
         else:
             for index_list in self.bins:
-                if len(self.q) < self.batch_size:
-                    self.pool_process(index_list)
-                for ind in range(int(len(self.q) / self.batch_size)):
-                    results = []
-                    for _ in range(self.batch_size):
-                        results.append(self.q.pop(0))
-                    batch_mix, batch_clean, mix_sig, clean_sig = self.collect_fn(results)
-                    yield batch_mix, batch_clean, mix_sig, clean_sig
+                # print("index_list", index_list)
+                # print("index file", self.dataset.item_list[index_list[0]])
+                self.pool_process(index_list)
+                results = self.q
+                batch_mix, batch_clean, mix_sig, clean_sig = self.collect_fn(results)
+                self.q = []
+                yield batch_mix, batch_clean, mix_sig, clean_sig
 
     def __len__(self):
         if self.sampler is not None:
