@@ -10,10 +10,10 @@ import numpy as np
 import soundfile as sf
 import tensorflow as tf
 from config import load_conf_info
+from data_utils.data_loader import AudioParser
 from model_utils.tester import BaseTester
 from model_utils.utils import AudioReBuild
-from model_utils.model import FullyCNNSEModel
-from data_utils.data_loader import AudioParser
+from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2, FullyCNNSEModelV3
 
 
 class InferenceEngine(BaseTester):
@@ -24,6 +24,8 @@ class InferenceEngine(BaseTester):
         self.audio_save_path = infer_config.get('data', 'audio_save_path')
         self.window_ms = int(infer_config.get("data", "window_ms"))
         self.stride_ms = int(infer_config.get("data", "stride_ms"))
+        self.net_arch = infer_config.get('model', 'net_arch')
+        self.net_work = infer_config.get('model', 'net_work')
         self.creat_graph()
         self._init_session()
         self._load_checkpoint()
@@ -40,7 +42,13 @@ class InferenceEngine(BaseTester):
                                        dtype=tf.float32,
                                        name="target")
         #
-        self.model = FullyCNNSEModel(is_training=False)
+        if self.net_work == "FullyCNNV2":
+            self.model = FullyCNNSEModelV2(is_training=False)
+        elif self.net_work == "FullyCNNV3":
+            self.model = FullyCNNSEModelV3(is_training=False)
+        else:
+            print("net_work set default or not wright. Use FullyCNN")
+            self.model = FullyCNNSEModel(is_training=False)
         self.pred = self.model(self.input_x)
 
     def denoise(self, audio_file):

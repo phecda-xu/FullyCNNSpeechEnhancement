@@ -9,9 +9,9 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 import soundfile as sf
-from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2, FullyCNNSEModelV3
-from model_utils.utils import AudioReBuild, AverageMeter
 from model_utils.utils import PESQ, STOI, SDR
+from model_utils.utils import AudioReBuild, AverageMeter
+from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2, FullyCNNSEModelV3
 
 
 class BaseTester(object):

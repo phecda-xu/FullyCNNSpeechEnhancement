@@ -64,6 +64,25 @@ Work文件夹下为shell执行脚本、数据集处理脚本用于数据处理�
 [FreezeEngine](freeze.py)
 
 
+## 案例
+
+- 所有的案例都放在[Work](Work/)目录下，以aishell_1数据集为例，[cfg](Work/aishell_1/cfg)为配置文件;
+
+- [run_train.sh](Work/aishell_1/run_train.sh) 执行训练指令，需要指定使用的cfg配置文件以及数据处理使用的进程数（多进程有问题，暂时建议设为1）
+
+- [run_test.sh](Work/aishell_1/run_test.sh) 执行测试指令，同上；
+
+- 训练过程中每5个epoch后会进行一次验证，验证的结果存放在[log](checkpoints/aishell_1/log)目录下；
+
+- 保存的模型在[checkpoints](checkpoints/) 目录下；
+
+## 实验结果
+
+|数据集|PESQ|STOI|SDR|
+|-:-|-:-|-:-|-:-|
+|aishell_1 + 自录噪声|2.1504|0.7027|2.1972|
+
+
 ## 待完成
 
 - 实验结果
