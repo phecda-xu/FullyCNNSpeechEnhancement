@@ -216,11 +216,12 @@ class DataLoader(object):
         return batch_data
 
     def collect_fn(self, batch_data):
+        size = len(batch_data)
         input_mix_sig = []
         input_mix_spec = []
         target_clean_sig = []
         target_clean_spec = []
-        for i in range(self.batch_size):
+        for i in range(size):
             input_mix_sig.append(batch_data[i][0][0])
             input_mix_spec.append(batch_data[i][1][0])
             target_clean_sig.append(batch_data[i][0][1])
