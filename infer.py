@@ -58,13 +58,13 @@ class InferenceEngine(BaseTester):
         mag = self.audio_parser.extractor.power_spectrum(complex_spectrogram)
         mag = np.reshape(mag, (1, mag.shape[1], mag.shape[0], 1))
         phase = self.audio_parser.extractor.divide_phase(complex_spectrogram)
-        phase = np.transpose(phase)
+        phase = np.reshape(phase, (1, phase.shape[1], phase.shape[0]))
         feed_dict = {
             self.input_x: mag
         }
         pred = self.sess.run(self.pred, feed_dict=feed_dict)
-        denoise = self.audio_rebuilder.rebuild_audio(sig_length,
-                                                     pred.squeeze(),
+        denoise = self.audio_rebuilder.rebuild_audio([sig_length],
+                                                     pred.squeeze(-1),
                                                      phase,
                                                      self.sample_rate,
                                                      self.window_ms,
@@ -73,7 +73,7 @@ class InferenceEngine(BaseTester):
             os.makedirs(self.audio_save_path)
         denoise_audio_path = os.path.join(self.audio_save_path,
                                           os.path.basename(audio_file).replace('.wav', '_de.wav'))
-        sf.write(denoise_audio_path, denoise, samplerate=self.sample_rate)
+        sf.write(denoise_audio_path, denoise[0], samplerate=self.sample_rate)
         print("Saving denoise file to {}.".format(denoise_audio_path))
 
 

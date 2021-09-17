@@ -9,6 +9,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 import soundfile as sf
+from joblib import Parallel, delayed
 from model_utils.utils import PESQ, STOI, SDR
 from model_utils.utils import AudioReBuild, AverageMeter
 from model_utils.model import FullyCNNSEModel, FullyCNNSEModelV2, FullyCNNSEModelV3
@@ -97,48 +98,71 @@ class FullyCNNTester(BaseTester):
         stride_ms = valid_loader.dataset.stride_s * 1000
         pbar = tqdm(enumerate(valid_loader), total=len(valid_loader))
         for index, (batch_mix, batch_clean, mix_sig, clean_sig) in pbar:
+            start_time = time.time()
             audio_bins = valid_loader.bins[index]
-            # print("audio_bins", audio_bins)
-            # print("audio_bins", valid_loader.dataset.item_list[audio_bins[0]])
             pbar.set_description("Testing %s" % (index))
             batch_mag = valid_loader.dataset.extractor.power_spectrum(batch_mix)
             batch_phase = valid_loader.dataset.extractor.divide_phase(batch_mix)
             pred_mag = self.test_step(batch_mag)
-            for i in range(len(audio_bins)):
-                clean = clean_sig[i]
-                mix = mix_sig[i]
-                sig_length = len(clean)
-                mag = pred_mag[i].squeeze()
-                phase = batch_phase[i].squeeze()
-                denoise = rebuilder.rebuild_audio(sig_length,
-                                                  mag,
-                                                  phase,
-                                                  self.sample_rate,
-                                                  window_ms,
-                                                  stride_ms)
+            sig_length_list = [len(i) for i in clean_sig]
+            denoise = rebuilder.rebuild_audio(sig_length_list,
+                                              pred_mag.squeeze(-1),
+                                              batch_phase.squeeze(-1),
+                                              self.sample_rate,
+                                              window_ms,
+                                              stride_ms)
+            # print("rebuild time:", time.time() - start_time)
 
-                p_score = Pesq(clean, denoise)
-                st_score = Stoi(clean, denoise)
-                sd_score = Sdr(clean, denoise)
-
-                self.pesq_score.update(p_score)
-                self.stoi_score.update(st_score)
-                self.sdr_score.update(sd_score)
-
-                clean_audio_path = valid_loader.dataset.item_list[audio_bins[i]]["audio_filepath"]
+            def save_audio(clean_audio_path, clean_auido, mix_audio, denoise_audio, audio_save_path, sample_rate):
                 # print("clean_audio_path ", clean_audio_path)
-                new_save_clean_path = os.path.join(self.audio_save_path,
+                new_save_clean_path = os.path.join(audio_save_path,
                                                    os.path.basename(clean_audio_path))
-                mix_audio_path = os.path.join(self.audio_save_path,
+                mix_audio_path = os.path.join(audio_save_path,
                                               os.path.basename(clean_audio_path).replace('.wav', '_mix.wav'))
-                denoise_audio_path = os.path.join(self.audio_save_path,
+                denoise_audio_path = os.path.join(audio_save_path,
                                                   os.path.basename(clean_audio_path).replace('.wav', '_de.wav'))
-                sf.write(new_save_clean_path, clean, samplerate=self.sample_rate)
-                sf.write(mix_audio_path, mix, samplerate=self.sample_rate)
-                sf.write(denoise_audio_path, denoise, samplerate=self.sample_rate)
-            pbar.set_postfix(PESQ=self.pesq_score.avg, STOI=self.stoi_score.avg, SDR=self.sdr_score.avg)
+                sf.write(new_save_clean_path, clean_auido, samplerate=sample_rate)
+                sf.write(mix_audio_path, mix_audio, samplerate=sample_rate)
+                sf.write(denoise_audio_path, denoise_audio, samplerate=sample_rate)
+
+            def process_result(audio_bins, clean_sig, denoise, mix_sig, audio_save_path, sample_rate):
+                # PESQ
+                p_score_list = Parallel(n_jobs=-2)(
+                    delayed(Pesq)(clean_sig[i], denoise[i]) for i in
+                    range(len(audio_bins))
+                )
+                [self.pesq_score.update(p_score) for p_score in p_score_list]
+                # STOI
+                st_score_list = Parallel(n_jobs=-2)(
+                    delayed(Stoi)(clean_sig[i], denoise[i]) for i in
+                    range(len(audio_bins))
+                )
+                [self.stoi_score.update(st_score) for st_score in st_score_list]
+                # SDR
+                sd_score_list = Parallel(n_jobs=-2)(
+                    delayed(Sdr)(clean_sig[i], denoise[i]) for i in
+                    range(len(audio_bins))
+                )
+                [self.sdr_score.update(sd_score) for sd_score in sd_score_list]
+                # save audio
+                Parallel(n_jobs=-2)(
+                    delayed(save_audio)(valid_loader.dataset.item_list[audio_bins[i]]["audio_filepath"],
+                                        clean_sig[i],
+                                        mix_sig[i],
+                                        denoise[i],
+                                        audio_save_path,
+                                        sample_rate) for i in range(len(audio_bins))
+                )
+            # do process
+            process_result(audio_bins, clean_sig, denoise, mix_sig, self.audio_save_path, self.sample_rate)
+            end_time = time.time()
+            pbar.set_postfix(PESQ=self.pesq_score.avg,
+                             STOI=self.stoi_score.avg,
+                             SDR=self.sdr_score.avg,
+                             BatchTime=end_time-start_time)
         print("Average p_score: {:.4f}; "
               "Average st_score: {:.4f}; "
               "Average sd_score: {:.4f}.\n".format(self.pesq_score.avg,
                                                    self.stoi_score.avg,
                                                    self.sdr_score.avg))
+

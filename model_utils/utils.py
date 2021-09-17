@@ -101,11 +101,14 @@ class AudioReBuild(object):
         self.window = windows.get(windows_name, windows['hamming'])
 
     def de_emphasis(self, signal):
-        pre_emphasis = 0.97
-        de_emphasized_signal = [signal[0]]
-        for i in range(1, len(signal)):
-            sample_value = signal[i] + de_emphasized_signal[i - 1] * pre_emphasis
-            de_emphasized_signal.append(sample_value)
+        def func(sig):
+            pre_emphasis = 0.97
+            de_emphasized_signal = [sig[0]]
+            for i in range(1, len(sig)):
+                sample_value = sig[i] + de_emphasized_signal[i - 1] * pre_emphasis
+                de_emphasized_signal.append(sample_value)
+            return np.array(de_emphasized_signal)
+        de_emphasized_signal = np.apply_along_axis(func, 1, signal)
         return de_emphasized_signal
 
     def ifft(self, x, window_size):
@@ -113,24 +116,36 @@ class AudioReBuild(object):
         return x
 
     def merge_magphase(self, magnitude, phase):
-        """merge magnitude (S) and phase (P) to a complex-valued stft D so that `D = S * P`."""
+        """merge magnitude (S) and phase (P) to a complex-valued stft D so that `D = S * P`.
+        :param magnitude: [N, T, F], N is batch_size
+        :param phase: [N, T, F]
+        :return:
+        """
         complex_sig = magnitude * phase
         return complex_sig
 
     def de_window(self, frame_sig, frame_length):
+        """
+
+        :param frame_sig: [N,T,F]
+        :param frame_length: int
+        :return:[N,T,F]
+        """
         with_window = self.window(frame_length)
-        frame_sig_new = []
-        for frame in frame_sig:
-            frame_sig_new.append(frame / with_window)
-        return np.array(frame_sig_new)
+        frame_sig_new = frame_sig / with_window
+        return frame_sig_new
 
     def de_frame(self, frame_sig, frame_stride):
-        sig = []
-        sig.extend(frame_sig[0])
-        for index in range(1, len(frame_sig)):
-            stride_cache = frame_sig[index][frame_stride:]
-            sig.extend(stride_cache)
-        return np.array(sig)
+        """
+
+        :param frame_sig: [N,T,F]
+        :param frame_stride: int
+        :return: [N, (T+1)*F/2]
+        """
+        frame_sig = frame_sig.reshape([frame_sig.shape[0], frame_sig.shape[1], -1, frame_stride])
+        main_frame = frame_sig[:, :, 1, :].reshape(frame_sig.shape[0], -1)
+        sig = np.append(frame_sig[:, 0, 0, :], main_frame, axis=1)
+        return sig
 
     @staticmethod
     def en_frame(frame_size, frame_stride, sample_rate, signal):
@@ -154,7 +169,7 @@ class AudioReBuild(object):
         frames = pad_signal[np.mat(indices).astype(np.int32, copy=False)]
         return frame_length, frames
 
-    def rebuild_audio(self, sig_length, spec, phase, sample_rate, windows_ms, stride_ms):
+    def rebuild_audio(self, sig_length_list, spec, phase, sample_rate, windows_ms, stride_ms):
         n_window = int((windows_ms * sample_rate) / 1000)
         n_overlap = int((stride_ms * sample_rate) / 1000)
         hop_size = n_window - n_overlap
@@ -163,4 +178,7 @@ class AudioReBuild(object):
         signal_reconstructed_frame = self.de_window(signal_reconstructed_frame, n_window)
         signal_reconstructed_emphasized = self.de_frame(signal_reconstructed_frame, hop_size)
         signal_reconstructed_clean = self.de_emphasis(signal_reconstructed_emphasized)
-        return np.array(signal_reconstructed_clean[:sig_length])
+        rebuild_list = []
+        for i in range(len(signal_reconstructed_clean)):
+            rebuild_list.append(signal_reconstructed_clean[i][:sig_length_list[i]])
+        return rebuild_list
