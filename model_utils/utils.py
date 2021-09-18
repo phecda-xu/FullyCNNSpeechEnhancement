@@ -135,16 +135,14 @@ class AudioReBuild(object):
         frame_sig_new = frame_sig / with_window
         return frame_sig_new
 
-    def de_frame(self, frame_sig, frame_stride):
+    def de_frame(self, frame_sig, n_overlap):
         """
-
         :param frame_sig: [N,T,F]
-        :param frame_stride: int
+        :param n_overlap: int (window_size - stride_size)
         :return: [N, (T+1)*F/2]
         """
-        frame_sig = frame_sig.reshape([frame_sig.shape[0], frame_sig.shape[1], -1, frame_stride])
-        main_frame = frame_sig[:, :, 1, :].reshape(frame_sig.shape[0], -1)
-        sig = np.append(frame_sig[:, 0, 0, :], main_frame, axis=1)
+        main_frame = frame_sig[:, :, n_overlap:].reshape(frame_sig.shape[0], -1)
+        sig = np.append(frame_sig[:, 0, :n_overlap], main_frame, axis=1)
         return sig
 
     @staticmethod
@@ -171,12 +169,12 @@ class AudioReBuild(object):
 
     def rebuild_audio(self, sig_length_list, spec, phase, sample_rate, windows_ms, stride_ms):
         n_window = int((windows_ms * sample_rate) / 1000)
-        n_overlap = int((stride_ms * sample_rate) / 1000)
-        hop_size = n_window - n_overlap
+        n_stride = int((stride_ms * sample_rate) / 1000)
+        n_overlap = n_window - n_stride
         stft_reconstructed_clean = self.merge_magphase(spec, phase)
         signal_reconstructed_frame = self.ifft(stft_reconstructed_clean, n_window)
         signal_reconstructed_frame = self.de_window(signal_reconstructed_frame, n_window)
-        signal_reconstructed_emphasized = self.de_frame(signal_reconstructed_frame, hop_size)
+        signal_reconstructed_emphasized = self.de_frame(signal_reconstructed_frame, n_overlap)
         signal_reconstructed_clean = self.de_emphasis(signal_reconstructed_emphasized)
         rebuild_list = []
         for i in range(len(signal_reconstructed_clean)):
