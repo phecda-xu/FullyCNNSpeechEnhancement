@@ -14,9 +14,13 @@ source venv/bin/activate
 pip insatll -r requirements.txt
 ```
 
-- 数据处理
+## 案例
 
-`Work` 文件夹下有数据处理例子，以aishell_1为例，需要生成干净音频manifest列表文件，以及噪声manifest列表文件；
+所有的案例都放在[Work](Work/)目录下，以aishell_1数据集为例，[cfg](Work/aishell_1/cfg)为配置文件;
+
+- **数据处理**
+
+生成干净音频manifest列表文件，以及噪声manifest列表文件；
 
 ```
 manifest.aishell_1.train
@@ -34,43 +38,9 @@ cd Work/aishell_1
 $ sh run_data.sh
 ```
 
-## 代码结构说明
+- **训练**:[run_train.sh](Work/aishell_1/run_train.sh) 执行训练指令，需要指定使用的cfg配置文件以及数据处理使用的进程数（多进程有问题，暂时建议设为1）
 
-代码包括五个部分，分别是`数据`、`训练`、`测试`、`推理`、`移植`；
-
-Work文件夹下为shell执行脚本、数据集处理脚本用于数据处理、模型训练及测试等过程的执行控制。
-此外还包括生成的数据、log等文件，
-
-- 数据
-
-[DataLoader](data_utils/data_loader.py) -> [Sampler](data_utils/data_loader.py) 
--> [DataSet](data_utils/data_loader.py) -> [AudioFeature](data_utils/audio_feature.py)
-
-- 训练
-
-[main()](train.py) -> [FullyCNNTrainer](model_utils/trainer.py)
-
-
-- 测试
-
-[main()](test.py) -> [FullyCNNTester](model_utils/tester.py)
-
-- 推理
-
-[main()](infer.py) -> [InferenceEngine](infer.py)
-
-- freeze
-
-[FreezeEngine](freeze.py)
-
-
-## 案例
-
-- 所有的案例都放在[Work](Work/)目录下，以aishell_1数据集为例，[cfg](Work/aishell_1/cfg)为配置文件;
-
-- [run_train.sh](Work/aishell_1/run_train.sh) 执行训练指令，需要指定使用的cfg配置文件以及数据处理使用的进程数（多进程有问题，暂时建议设为1）
-
-- [run_test.sh](Work/aishell_1/run_test.sh) 执行测试指令，同上；
+- **测试**:[run_test.sh](Work/aishell_1/run_test.sh) 执行测试指令，同上；
 
 - 训练过程中每5个epoch后会进行一次验证，验证的结果存放在[log](checkpoints/aishell_1/log)目录下；
 
