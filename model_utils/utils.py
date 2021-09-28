@@ -91,7 +91,7 @@ class SDR(object):
 
 
 class AudioReBuild(object):
-    def __init__(self, windows_name=None):
+    def __init__(self, windows_name=None, nfft=512):
         windows = {
             'hamming': np.hamming,
             'hanning': np.hanning,
@@ -99,6 +99,7 @@ class AudioReBuild(object):
             'bartlett': np.bartlett
         }
         self.window = windows.get(windows_name, windows['hamming'])
+        self.nfft = nfft
 
     def de_emphasis(self, signal):
         def func(sig):
@@ -111,8 +112,8 @@ class AudioReBuild(object):
         de_emphasized_signal = np.apply_along_axis(func, 1, signal)
         return de_emphasized_signal
 
-    def ifft(self, x, window_size):
-        x = np.fft.irfft(x, window_size)
+    def ifft(self, x):
+        x = np.fft.irfft(x, self.nfft)
         return x
 
     def merge_magphase(self, magnitude, phase):
@@ -172,7 +173,7 @@ class AudioReBuild(object):
         n_stride = int((stride_ms * sample_rate) / 1000)
         n_overlap = n_window - n_stride
         stft_reconstructed_clean = self.merge_magphase(spec, phase)
-        signal_reconstructed_frame = self.ifft(stft_reconstructed_clean, n_window)
+        signal_reconstructed_frame = self.ifft(stft_reconstructed_clean)[:, :, :n_window]
         signal_reconstructed_frame = self.de_window(signal_reconstructed_frame, n_window)
         signal_reconstructed_emphasized = self.de_frame(signal_reconstructed_frame, n_overlap)
         signal_reconstructed_clean = self.de_emphasis(signal_reconstructed_emphasized)

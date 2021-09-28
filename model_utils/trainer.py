@@ -148,7 +148,7 @@ class FullyCNNTrainer(BaseTrainer):
 
     def loss_fun(self, y, pred):
         # loss_value = tf.losses.absolute_difference(x, y)
-        # loss_value = tf.losses.mean_squared_error(x, y) * 10
+        # loss_value = tf.losses.mean_squared_error(x, y) * 100
         # loss_value = tf.reduce_sum(loss_value)
         loss_value = self.l2_loss(y, pred)
         return loss_value
@@ -286,7 +286,7 @@ class FullyCNNTrainer(BaseTrainer):
                 sf.write(mix_audio_path, mix_audio, samplerate=sample_rate)
                 sf.write(denoise_audio_path, denoise_audio, samplerate=sample_rate)
 
-            def process_result(audio_bins, clean_sig, denoise, mix_sig, audio_save_path, sample_rate):
+            def process_result(audio_bins, clean_sig, denoise, mix_sig, epoch_save_path, sample_rate):
                 # PESQ
                 p_score_list = Parallel(n_jobs=-2)(
                     delayed(Pesq)(clean_sig[i], denoise[i]) for i in
@@ -311,12 +311,14 @@ class FullyCNNTrainer(BaseTrainer):
                                         clean_sig[i],
                                         mix_sig[i],
                                         denoise[i],
-                                        audio_save_path,
+                                        epoch_save_path,
                                         sample_rate) for i in range(len(audio_bins))
                 )
-
+            epoch_save_path = os.path.join(self.audio_save_path, str(epoch))
+            if not os.path.exists(epoch_save_path):
+                os.makedirs(epoch_save_path)
             # do process
-            process_result(audio_bins, clean_sig, denoise, mix_sig, self.audio_save_path, self.sample_rate)
+            process_result(audio_bins, clean_sig, denoise, mix_sig, epoch_save_path, self.sample_rate)
             end_time = time.time()
             pbar.set_postfix(PESQ=self.pesq_score.avg,
                              STOI=self.stoi_score.avg,
