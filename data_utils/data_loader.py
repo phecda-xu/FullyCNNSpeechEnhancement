@@ -8,6 +8,7 @@ import json
 import codecs
 import librosa
 import numpy as np
+from joblib import Parallel, delayed
 from data_utils.audio_feature import AudioFeature
 from multiprocessing import Process, Queue, Pool, Manager
 
@@ -80,19 +81,19 @@ class DataSet(AudioParser):
                                       use_complex=use_complex)
         self.min_duration = min_duration
         self.max_duration = max_duration
+        self.noise_manifest = noise_manifest
 
         self.item_list = self.read_manifest(manifest_filepath)
-        self.noise_list = self.read_manifest(noise_manifest)
-        if len(self.noise_list) < len(self.item_list):
-            self.noise_list = self.noise_list * int(np.ceil(len(self.item_list) / len(self.noise_list)))
-        assert len(self.noise_list) >= len(self.item_list)
+        if noise_manifest is not None:
+            self.noise_list = self.read_manifest(noise_manifest)
+            if len(self.noise_list) < len(self.item_list):
+                self.noise_list = self.noise_list * int(np.ceil(len(self.item_list) / len(self.noise_list)))
+            assert len(self.noise_list) >= len(self.item_list)
 
     def read_manifest(self, manifest_path):
         """
         Load data from manifest file.
         :param manifest_path:  str, path of manifest file
-        :param max_duration:   float, max duration of input data
-        :param min_duration:   float, min duration of input data
         :return manifest:      list, json list
         """
         manifest = []
@@ -106,20 +107,21 @@ class DataSet(AudioParser):
         return manifest
 
     def __getitem__(self, index):
-        start_time = time.time()
-        clean_audio = self.item_list[index]["audio_filepath"]
-        noise_audio = self.noise_list[index]["audio_filepath"]
-        speech, _ = self.load_audio(clean_audio)
-        noise, _ = self.load_audio(noise_audio)
-        # print("load time: {}".format(time.time() - start_time))
-        end_time = time.time()
-        mix_sig = self.add_noise(speech, noise)
-        # print("mix time: {}".format(time.time() - end_time))
-        end_time = time.time()
-        speech_spec = self.parse_audio(speech)
-        mix_spec = self.parse_audio(mix_sig)
-        # print("parse time: {}".format(time.time() - end_time))
-        # print("total time : {}".format(time.time() - start_time))
+        if self.noise_manifest is not None:
+            clean_audio = self.item_list[index]["audio_filepath"]
+            noise_audio = self.noise_list[index]["audio_filepath"]
+            speech, _ = self.load_audio(clean_audio)
+            noise, _ = self.load_audio(noise_audio)
+            mix_sig = self.add_noise(speech, noise)
+            speech_spec = self.parse_audio(speech)
+            mix_spec = self.parse_audio(mix_sig)
+        else:
+            clean_audio = self.item_list[index]["clean_audio_filepath"]
+            mix_audio = self.item_list[index]["mix_audio_filepath"]
+            speech, _ = self.load_audio(clean_audio)
+            mix_sig, _ = self.load_audio(mix_audio)
+            speech_spec = self.parse_audio(speech)
+            mix_spec = self.parse_audio(mix_sig)
         return (mix_sig, speech), (mix_spec, speech_spec)
 
     def __len__(self):
@@ -129,7 +131,7 @@ class DataSet(AudioParser):
         return self
 
     def shuffle(self):
-        np.random.shuffle(self.noise_list)
+        np.random.shuffle(self.item_list)
 
 
 class Sampler(object):
@@ -187,20 +189,26 @@ class DataLoader(object):
         a, b = self.dataset[x]
         return a, b
 
+    # def pool_process(self, index_list):
+    #     result = []
+    #     if self.num_works > 1:
+    #         pool = Pool(processes=self.num_works)
+    #         for index in index_list:
+    #             res = pool.apply_async(self.one_point, (index,))
+    #             result.append(res)
+    #         pool.close()
+    #         pool.join()
+    #         [self.q.append(i.get()) for i in result]
+    #     else:
+    #         for index in index_list:
+    #             res = self.one_point(index)
+    #             self.q.append(res)
+
     def pool_process(self, index_list):
-        result = []
-        if self.num_works > 1:
-            pool = Pool(processes=self.num_works)
-            for index in index_list:
-                res = pool.apply_async(self.one_point, (index,))
-                result.append(res)
-            pool.close()
-            pool.join()
-            [self.q.append(i.get()) for i in result]
-        else:
-            for index in index_list:
-                res = self.one_point(index)
-                self.q.append(res)
+        results = Parallel(n_jobs=self.num_works)(
+            delayed(self.one_point)(index) for index in index_list
+        )
+        self.q.extend(results)
 
     def padding_batch(self, batch_list):
         max_array = max(batch_list, key=lambda x: x.shape[1])

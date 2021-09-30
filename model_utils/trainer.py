@@ -167,7 +167,7 @@ class FullyCNNTrainer(BaseTrainer):
         elif self.net_work == "FullyCNNV3":
             self.model = FullyCNNSEModelV3(is_training=True)
         else:
-            print("net_work set default or not wright. Use FullyCNN")
+            print("net_work set default or not right. Use FullyCNN")
             self.model = FullyCNNSEModel(is_training=True)
         self.pred = self.model(self.input_x)
         self.loss_value = self.loss_fun(self.target_y, self.pred)
@@ -288,25 +288,25 @@ class FullyCNNTrainer(BaseTrainer):
 
             def process_result(audio_bins, clean_sig, denoise, mix_sig, epoch_save_path, sample_rate):
                 # PESQ
-                p_score_list = Parallel(n_jobs=-2)(
+                p_score_list = Parallel(n_jobs=-1)(
                     delayed(Pesq)(clean_sig[i], denoise[i]) for i in
                     range(len(audio_bins))
                 )
                 [self.pesq_score.update(p_score) for p_score in p_score_list]
                 # STOI
-                st_score_list = Parallel(n_jobs=-2)(
+                st_score_list = Parallel(n_jobs=-1)(
                     delayed(Stoi)(clean_sig[i], denoise[i]) for i in
                     range(len(audio_bins))
                 )
                 [self.stoi_score.update(st_score) for st_score in st_score_list]
                 # SDR
-                sd_score_list = Parallel(n_jobs=-2)(
+                sd_score_list = Parallel(n_jobs=-1)(
                     delayed(Sdr)(clean_sig[i], denoise[i]) for i in
                     range(len(audio_bins))
                 )
                 [self.sdr_score.update(sd_score) for sd_score in sd_score_list]
                 # save audio
-                Parallel(n_jobs=-2)(
+                Parallel(n_jobs=-1)(
                     delayed(save_audio)(valid_loader.dataset.item_list[audio_bins[i]]["audio_filepath"],
                                         clean_sig[i],
                                         mix_sig[i],

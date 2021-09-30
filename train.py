@@ -27,8 +27,8 @@ def main(config, num_works):
     sample_rate = int(config.get("data", 'sample_rate'))
     train_clean_manifest = config.get("data", "train_manifest_path")
     val_clean_manifest = config.get("data", "val_manifest_path")
-    train_noise_manifest = config.get("data", "train_noise_manifest")
-    val_noise_manifest = config.get("data", "val_noise_manifest")
+    train_noise_manifest = config.get("data", "train_noise_manifest") if config.has_option("data", "train_noise_manifest") else None
+    val_noise_manifest = config.get("data", "val_noise_manifest") if config.has_option("data", "val_noise_manifest") else None
     snr = float(config.get("data", "snr"))
     # logging INFO
     if not os.path.exists(logging_path):

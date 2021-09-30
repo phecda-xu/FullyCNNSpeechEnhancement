@@ -9,15 +9,13 @@
 import os
 import json
 import codecs
-import string
 import resampy
 import argparse
 import soundfile as sf
-from tqdm import tqdm
 from data_utils.utils import unpack
-from multiprocessing import Process, Queue, Pool, Manager
+from joblib import Parallel, delayed
 
-DATA_HOME = '~/datadisk/phecda/ASR'
+DATA_HOME = '~/data/ASR'
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -61,7 +59,6 @@ def load_and_resample(audio_path, n):
             'duration': duration,
         },
         ensure_ascii=False)
-    # print("pid : {} ; process audio :{}".format(os.getpid(), n))
     return json_str
 
 
@@ -99,32 +96,18 @@ def create_manifest(data_dir, manifest_path_prefix):
     test_json_lines = []
     dev_json_lines = []
     audio_dir = os.path.join(data_dir, 'iOS/data/wav')
-    pool = Pool()
-    results = []
     n = 0
-    for subfolder, _, filelist in tqdm(sorted(os.walk(audio_dir))):
+    for subfolder, _, filelist in sorted(os.walk(audio_dir)):
         spk_id = os.path.basename(subfolder)
-        for fname in filelist:
-            audio_path = os.path.join(subfolder, fname)
-            try:
-                n += 1
-                res = pool.apply_async(load_and_resample, (audio_path, n))
-                results.append(res)
-            except:
-                continue
-        pool.close()
-        pool.join()
-        for res in tqdm(results):
-            get_res = res.get()
-            if get_res is None:
-                continue
-            # json_lines.append(res.get())
-            if spk_id in dev_spk_list:
-                dev_json_lines.append(get_res)
-            elif spk_id in test_spk_list:
-                test_json_lines.append(get_res)
-            else:
-                train_json_lines.append(get_res)
+        results = Parallel(n_jobs=-1)(
+            delayed(load_and_resample)(os.path.join(subfolder, fname), n) for fname in filelist
+        )
+        if spk_id in dev_spk_list:
+            dev_json_lines.extend(results)
+        elif spk_id in test_spk_list:
+            test_json_lines.extend(results)
+        else:
+            train_json_lines.extend(results)
     # save manifest
     manifest_path = manifest_path_prefix + '.' + 'train'
     with codecs.open(manifest_path, 'w', 'utf-8') as fout:

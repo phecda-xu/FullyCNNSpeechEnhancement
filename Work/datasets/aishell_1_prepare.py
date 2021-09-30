@@ -13,10 +13,10 @@ import resampy
 import argparse
 import soundfile as sf
 from tqdm import tqdm
+from joblib import Parallel, delayed
 from data_utils.utils import download, unpack
-from multiprocessing import Process, Queue, Pool, Manager
 
-DATA_HOME = '~/datadisk/phecda/ASR'
+DATA_HOME = '~/data/ASR'
 
 URL_ROOT = 'http://www.openslr.org/resources/33'
 DATA_URL = URL_ROOT + '/data_aishell.tgz'
@@ -75,37 +75,24 @@ def create_manifest(data_dir, manifest_path_prefix):
     data_sets = ['train', 'dev', 'test']
     for data_set in data_sets:
         json_lines = []
-        pool = Pool()
-        results = []
         n = 0
         audio_dir = os.path.join(data_dir, 'wav', data_set)
         for subfolder, _, filelist in tqdm(sorted(os.walk(audio_dir))):
-            for fname in filelist:
-                audio_path = os.path.join(subfolder, fname)
-                try:
-                    n += 1
-                    res = pool.apply_async(load_and_resample, (audio_path, n))
-                    results.append(res)
-                except:
-                    continue
-        pool.close()
-        pool.join()
-        for res in tqdm(results):
-            get_res = res.get()
-            if get_res is None:
-                continue
-            json_lines.append(get_res)
+            results = Parallel(n_jobs=-1)(
+                delayed(load_and_resample)(os.path.join(subfolder, fname), n) for fname in filelist
+            )
+            json_lines.extend(results)
         manifest_path = manifest_path_prefix + '.' + data_set
         with codecs.open(manifest_path, 'w', 'utf-8') as fout:
             for line in json_lines:
                 fout.write(line + '\n')
 
 
-def prepare_dataset(url, md5sum, target_dir, manifest_path):
+def prepare_dataset(url, target_dir, manifest_path):
     """Download, unpack and create manifest file."""
     data_dir = os.path.join(target_dir, 'data_aishell')
     if not os.path.exists(data_dir):
-        filepath = download(url, md5sum, target_dir)
+        filepath = download(url, target_dir)
         unpack(filepath, target_dir)
         # unpack all audio tar files
         audio_dir = os.path.join(data_dir, 'wav')
@@ -124,7 +111,6 @@ def main():
 
     prepare_dataset(
         url=DATA_URL,
-        md5sum=MD5_DATA,
         target_dir=args.target_dir,
         manifest_path=args.manifest_prefix)
 

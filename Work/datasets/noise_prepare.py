@@ -13,7 +13,7 @@ import resampy
 import argparse
 import soundfile as sf
 from tqdm import tqdm
-from multiprocessing import Process, Queue, Pool, Manager
+from joblib import Parallel, delayed
 
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -58,7 +58,6 @@ def load_and_resample(audio_path, n):
             'duration': duration,
         },
         ensure_ascii=False)
-    # print("pid : {} ; process audio :{}".format(os.getpid(), n))
     return json_str
 
 
@@ -71,24 +70,13 @@ def create_manifest(data_dir, manifest_path_prefix):
     data_types = ['train', 'dev', 'test']
     for data_type in data_types:
         json_lines = []
-        pool = Pool()
-        results = []
         n = 0
         audio_dir = os.path.join(data_dir, data_type)
         for subfolder, _, filelist in sorted(os.walk(audio_dir)):
-            for filename in tqdm(filelist):
-                if filename.endswith('.wav'):
-                    audio_path = os.path.join(data_dir, subfolder, filename)
-                    n += 1
-                    res = pool.apply_async(load_and_resample, (audio_path, n))
-                    results.append(res)
-        pool.close()
-        pool.join()
-        for res in results:
-            get_res = res.get()
-            if get_res is None:
-                continue
-            json_lines.append(get_res)
+            results = Parallel(n_jobs=-1)(
+                delayed(load_and_resample)(os.path.join(subfolder, fname), n) for fname in filelist
+            )
+            json_lines.extend(results)
         manifest_path = manifest_path_prefix + '.' + data_type
         if not os.path.exists(os.path.dirname(manifest_path)):
             os.makedirs(os.path.dirname(manifest_path))
