@@ -20,7 +20,7 @@ pip insatll -r requirements.txt
 
 - **数据处理**
 
-生成干净音频manifest列表文件，以及噪声manifest列表文件；
+1、干净音频和噪声音频分开，数据没有加噪的时候，生成干净音频manifest列表文件，以及噪声manifest列表文件；
 
 ```
 manifest.aishell_1.train
@@ -31,6 +31,16 @@ manifest.noise_train
 ```
 
 处理脚本 [run_data.sh](Work/aishell_1/run_data.sh), 修改配置内容，同时处理干净数据和噪声数据。
+
+
+2、数据已加噪
+
+```
+manifest.voicebank.trainset
+   格式： {"clean_audio_filepath": "/home/aipc/data/8KSE/voicebank/dataset/clean_testset/p232_054.wav", 
+          "mix_audio_filepath": "/home/aipc/data/8KSE/voicebank/dataset/noisy_testset/p232_054.wav", 
+          "duration": 3.70625}
+```
 
 ```shell script
 cd Work/aishell_1
