@@ -189,21 +189,6 @@ class DataLoader(object):
         a, b = self.dataset[x]
         return a, b
 
-    # def pool_process(self, index_list):
-    #     result = []
-    #     if self.num_works > 1:
-    #         pool = Pool(processes=self.num_works)
-    #         for index in index_list:
-    #             res = pool.apply_async(self.one_point, (index,))
-    #             result.append(res)
-    #         pool.close()
-    #         pool.join()
-    #         [self.q.append(i.get()) for i in result]
-    #     else:
-    #         for index in index_list:
-    #             res = self.one_point(index)
-    #             self.q.append(res)
-
     def pool_process(self, index_list):
         results = Parallel(n_jobs=self.num_works)(
             delayed(self.one_point)(index) for index in index_list
