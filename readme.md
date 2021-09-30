@@ -33,7 +33,7 @@ manifest.noise_train
 处理脚本 [run_data.sh](Work/aishell_1/run_data.sh), 修改配置内容，同时处理干净数据和噪声数据。
 
 
-2、数据已加噪
+2、数据已加噪,干净音频和加噪音频放一个字典中
 
 ```
 manifest.voicebank.trainset
