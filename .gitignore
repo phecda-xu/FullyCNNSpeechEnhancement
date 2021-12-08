@@ -1,12 +1,4 @@
 .idea/
 venv/
 __pycache__/
-workspace/mixture_csvs/
-workspace/features/
-workspace/mixed_audios/
-workspace/packed_features/
-workspace/models/
-workspace/enh_wavs/
-utils/__pycache__/
-data_cache/record.wav
-data_cache/test_speech/
+data_cache/
